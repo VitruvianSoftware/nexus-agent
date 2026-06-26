@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/VitruvianSoftware/nexus-agent/compare/nexus-agent-v1.10.2...nexus-agent-v1.11.0) (2026-06-26)
+
+
+### Features
+
+* **copybara:** App-authenticated PR-import for all mirrors ([#78](https://github.com/VitruvianSoftware/nexus-agent/issues/78)/[#79](https://github.com/VitruvianSoftware/nexus-agent/issues/79)/[#80](https://github.com/VitruvianSoftware/nexus-agent/issues/80)) ([#121](https://github.com/VitruvianSoftware/nexus-agent/issues/121)) ([724d59e](https://github.com/VitruvianSoftware/nexus-agent/commit/724d59eccdbf1b1ff6c1ea077c344d3278dc4d0c))
+
+
+### Bug Fixes
+
+* **nexus-agent:** swift-tools-version must be Package.swift's first line ([#210](https://github.com/VitruvianSoftware/nexus-agent/issues/210)) ([#315](https://github.com/VitruvianSoftware/nexus-agent/issues/315)) ([e3ddc02](https://github.com/VitruvianSoftware/nexus-agent/commit/e3ddc02f80653ad0755db6247007886ed61c39d6))
+
 ## [1.10.2](https://github.com/VitruvianSoftware/nexus-agent/compare/nexus-agent-v1.10.1...nexus-agent-v1.10.2) (2026-04-13)
 
 
