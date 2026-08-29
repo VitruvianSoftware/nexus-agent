@@ -65,7 +65,7 @@ def main():
             handle_after_agent(data, stream_file)
     except Exception as e:
         # Log errors to stderr (visible in gemini logs, not parsed as output)
-        print(f"stream-hook error: {e}", file=sys.stderr)
+        print(f"stream_hook error: {e}", file=sys.stderr)
 
     # Always output empty JSON (allow/pass-through)
     print("{}")
