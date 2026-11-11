@@ -18,12 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-// Shared by the standalone Nexus Agent app and the Nexus Agent feature of the
+// Shared by the standalone Vitruvian Code app and the Code feature of the
 // Vitruvian desktop app. Written for Vitruvian and released under MIT by its
 // copyright holder on 2026-10-09 (apps/desktop/vitruvian/UPSTREAM.md).
 
-import NexusAgentCore
-import NexusAgentUI
+import VitruvianCodeCore
+import VitruvianCodeUI
 import XCTest
 
 @MainActor
@@ -43,12 +43,12 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
           - bazel build //...
         """
 
-        let config = NexusAgentWorktreeConfig.parse(yaml: yaml)
+        let config = VitruvianCodeWorktreeConfig.parse(yaml: yaml)
         XCTAssertEqual(config.baseBranch, "main")
         XCTAssertEqual(config.env, ["NODE_ENV": "development", "API_PORT": "8080"])
         XCTAssertEqual(config.setup, ["pnpm install --frozen-lockfile", "bazel build //..."])
 
-        let roundTripped = NexusAgentWorktreeConfig.parse(yaml: config.serialize())
+        let roundTripped = VitruvianCodeWorktreeConfig.parse(yaml: config.serialize())
         XCTAssertEqual(roundTripped, config)
     }
 
@@ -66,28 +66,28 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
 
         """
 
-        let parsed = NexusAgentWorktreeManager.parsePorcelainList(porcelain)
+        let parsed = VitruvianCodeWorktreeManager.parsePorcelainList(porcelain)
         XCTAssertEqual(parsed.count, 2)
         XCTAssertEqual(parsed[0].worktreePath, "/workspace/repo")
         XCTAssertEqual(parsed[0].shortBranchName, "main")
         XCTAssertEqual(parsed[1].worktreePath, "/workspace/repo-worktrees/antigravity-cli-fix-auth")
         XCTAssertEqual(parsed[1].shortBranchName, "nexus/antigravity-cli/fix-auth")
 
-        let customProvider = NexusAgentCLIProvider(
+        let customProvider = VitruvianCodeCLIProvider(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000099")!,
             name: "Custom Aider",
             commandTemplate: "aider --message \"{prompt}\"",
             isBuiltIn: false
         )
-        let providers: [NexusAgentCLIProvider] = [
+        let providers: [VitruvianCodeCLIProvider] = [
             .antigravity,
             .claude,
             .opencode,
             customProvider,
         ]
 
-        let manager = NexusAgentWorktreeManager()
-        let config = NexusAgentWorktreeConfig(setup: ["pnpm install"], env: ["CI": "1"], baseBranch: "origin/main")
+        let manager = VitruvianCodeWorktreeManager()
+        let config = VitruvianCodeWorktreeConfig(setup: ["pnpm install"], env: ["CI": "1"], baseBranch: "origin/main")
 
         for provider in providers {
             let created = await manager.createWorktree(
@@ -116,8 +116,8 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
     // MARK: - Multi-Agent Race Mode Lifecycle
 
     func testRaceSessionFansOutContendersParsesDiffStatsAndPicksWinner() async {
-        let session = NexusAgentRaceSession()
-        let specs: [(provider: NexusAgentCLIProvider, model: String)] = [
+        let session = VitruvianCodeRaceSession()
+        let specs: [(provider: VitruvianCodeCLIProvider, model: String)] = [
             (.antigravity, "gemini-3-pro"),
             (.claude, "claude-opus-4-6"),
             (.opencode, "anthropic/claude-sonnet-4-5"),
@@ -176,7 +176,7 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
     // MARK: - Checkpoint Timeline & Attribution
 
     func testCheckpointTimelineAttributionAndRewind() async {
-        let timeline = NexusAgentCheckpointTimeline()
+        let timeline = VitruvianCodeCheckpointTimeline()
 
         let turn1 = timeline.recordTurnCheckpoint(
             turnIndex: 1,
@@ -226,7 +226,7 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
         let childEntries = ["frontend", "backend", "docs", ".hidden-repo"]
         let gitSet: Set<String> = ["/workspace/parent/frontend", "/workspace/parent/backend", "/workspace/parent/.hidden-repo"]
 
-        let discovered = NexusAgentMultiRepoWorkspace.discoverRepositories(
+        let discovered = VitruvianCodeMultiRepoWorkspace.discoverRepositories(
             in: "/workspace/parent",
             listDirectory: { _ in childEntries },
             isGitRepo: { gitSet.contains($0) }
@@ -234,7 +234,7 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
 
         XCTAssertEqual(discovered, ["/workspace/parent/backend", "/workspace/parent/frontend"])
 
-        let claudeFlags = NexusAgentMultiRepoWorkspace.additionalDirectoryArguments(
+        let claudeFlags = VitruvianCodeMultiRepoWorkspace.additionalDirectoryArguments(
             for: .claude,
             childRepos: discovered
         )
@@ -243,13 +243,13 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
             ["--add-dir", "/workspace/parent/backend", "--add-dir", "/workspace/parent/frontend"]
         )
 
-        let ollamaFlags = NexusAgentMultiRepoWorkspace.additionalDirectoryArguments(
+        let ollamaFlags = VitruvianCodeMultiRepoWorkspace.additionalDirectoryArguments(
             for: .ollama,
             childRepos: discovered
         )
         XCTAssertEqual(ollamaFlags, claudeFlags)
 
-        let opencodeFlags = NexusAgentMultiRepoWorkspace.additionalDirectoryArguments(
+        let opencodeFlags = VitruvianCodeMultiRepoWorkspace.additionalDirectoryArguments(
             for: .opencode,
             childRepos: discovered
         )
@@ -266,11 +266,11 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
         setup:
           - "npm test"
         """
-        let config = NexusAgentWorktreeConfig.parse(yaml: yaml)
+        let config = VitruvianCodeWorktreeConfig.parse(yaml: yaml)
         XCTAssertEqual(config.setup, ["npm test"])
         XCTAssertEqual(config.env["API_TOKEN"], "secret'123")
 
-        let manager = NexusAgentWorktreeManager()
+        let manager = VitruvianCodeWorktreeManager()
         nonisolated(unsafe) var capturedSetupArgs: [[String]] = []
         let created = await manager.createWorktree(
             taskName: "env-test",
@@ -291,7 +291,7 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
     }
 
     func testRaceSessionResetAndCheckpointTimelineClear() async {
-        let race = NexusAgentRaceSession()
+        let race = VitruvianCodeRaceSession()
         await race.startRace(
             prompt: "Test reset",
             specs: [(.antigravity, ""), (.claude, "")],
@@ -304,7 +304,7 @@ final class OrcaWorktreeAndRaceTests: XCTestCase {
         XCTAssertNil(race.winnerID)
         XCTAssertFalse(race.isRunning)
 
-        let timeline = NexusAgentCheckpointTimeline()
+        let timeline = VitruvianCodeCheckpointTimeline()
         timeline.recordTurnCheckpoint(promptPreview: "Turn 1", commitOrStashRef: "abc1234", aiAddedLines: 10)
         XCTAssertEqual(timeline.entries.count, 1)
         timeline.clear()

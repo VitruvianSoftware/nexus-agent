@@ -24,8 +24,8 @@ use std::process;
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
-    let opts = nexus_agent_bot::parse_args(&args);
-    match nexus_agent_bot::run_bot(&opts) {
+    let opts = vitruvian_code_bot::parse_args(&args);
+    match vitruvian_code_bot::run_bot(&opts) {
         Ok(out) => print!("{}", out),
         Err(err) => {
             print!("{}", err);

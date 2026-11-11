@@ -23,8 +23,10 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+// TODO(brand step 2): .app and executable file name stay NexusAgent until migration.
 const APP_NAME: &str = "NexusAgent";
-const UI_RESOURCES: &str = "NexusAgent_NexusAgentUI.bundle";
+const DISPLAY_NAME: &str = "Vitruvian Code";
+const UI_RESOURCES: &str = "VitruvianCode_VitruvianCodeUI.bundle";
 
 fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
     fs::create_dir_all(dst)?;
@@ -64,7 +66,7 @@ pub fn run(args: &[String]) -> i32 {
     let resources_candidates = [
         script_dir.join("../Resources"),
         script_dir.join("Resources"),
-        PathBuf::from("apps/desktop/nexus-agent/macos/Resources"),
+        PathBuf::from("apps/desktop/vitruvian-code/macos/Resources"),
         PathBuf::from("macos/Resources"),
         PathBuf::from("Resources"),
     ];
@@ -144,7 +146,7 @@ pub fn run(args: &[String]) -> i32 {
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>{app}</string>
+    <string>{display_name}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -163,6 +165,7 @@ pub fn run(args: &[String]) -> i32 {
 </plist>
 "#,
         app = APP_NAME,
+        display_name = DISPLAY_NAME,
         ver = version,
     );
     if let Err(e) = fs::write(app_bundle.join("Contents/Info.plist"), &plist) {

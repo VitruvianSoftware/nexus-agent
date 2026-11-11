@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/formatter.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/formatter.js`.
 //! Handles message splitting for Telegram's 4096-character limit and converts
 //! standard Markdown into Telegram-compatible HTML.
 

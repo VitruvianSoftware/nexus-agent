@@ -21,12 +21,12 @@
 
 //! Native Rust binary (`bot-engine`) for the Antigravity Telegram Bot.
 
-use nexus_agent_src_lib::bot::{BotEngine, TelegramHttpClient, BOT_COMMANDS};
-use nexus_agent_src_lib::JsonValue;
 use std::env;
 use std::process;
 use std::thread;
 use std::time::Duration;
+use vitruvian_code_src_lib::bot::{BotEngine, TelegramHttpClient, BOT_COMMANDS};
+use vitruvian_code_src_lib::JsonValue;
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -36,8 +36,13 @@ fn main() {
     if args.first().map(|s| s.as_str()) == Some("--print-agy-flags") {
         let prompt = args.get(1).map(|s| s.as_str()).unwrap_or("hi");
         let settings = engine.bridge.get_chat_settings(0);
-        let built =
-            nexus_agent_src_lib::agy::build_agy_args(prompt, &settings, "stream-json", None, None);
+        let built = vitruvian_code_src_lib::agy::build_agy_args(
+            prompt,
+            &settings,
+            "stream-json",
+            None,
+            None,
+        );
         let head: Vec<JsonValue> = built
             .iter()
             .take(4)

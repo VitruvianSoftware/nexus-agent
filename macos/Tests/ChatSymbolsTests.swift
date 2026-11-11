@@ -35,7 +35,7 @@ final class ChatSymbolsTests: XCTestCase {
     /// (the `shared_ui_sources` data); under SwiftPM or Xcode the test
     /// file's own path leads to them.
     private func sourcesDirectory() -> String? {
-        let relative = "apps/desktop/nexus-agent/macos/Sources/NexusAgentUI"
+        let relative = "apps/desktop/vitruvian-code/macos/Sources/VitruvianCodeUI"
         var candidates: [String] = []
         let environment = ProcessInfo.processInfo.environment
         if let runfiles = environment["TEST_SRCDIR"] {
@@ -44,13 +44,13 @@ final class ChatSymbolsTests: XCTestCase {
             }
         }
         let here = (#filePath as NSString).deletingLastPathComponent
-        candidates.append((here as NSString).deletingLastPathComponent + "/Sources/NexusAgentUI")
+        candidates.append((here as NSString).deletingLastPathComponent + "/Sources/VitruvianCodeUI")
         return candidates.first { FileManager.default.fileExists(atPath: $0) }
     }
 
     private func swiftFiles() -> [(name: String, text: String)] {
         guard let directory = sourcesDirectory() else {
-            XCTFail("could not find the NexusAgentUI sources to check")
+            XCTFail("could not find the VitruvianCodeUI sources to check")
             return []
         }
         let names = ((try? FileManager.default.subpathsOfDirectory(atPath: directory)) ?? [])
@@ -67,9 +67,9 @@ final class ChatSymbolsTests: XCTestCase {
 
     func testTheSourcesAreFound() {
         let names = Set(swiftFiles().map(\.name))
-        for expected in ["NexusAgentChatStrings.swift", "NexusAgentChatChrome.swift", "NexusAgentChatView.swift",
-                         "NexusAgentMessageBubble.swift", "NexusAgentCodeBlocks.swift",
-                         "NexusAgentChatControls.swift", "NexusAgentSessionRow.swift"] {
+        for expected in ["VitruvianCodeChatStrings.swift", "VitruvianCodeChatChrome.swift", "VitruvianCodeChatView.swift",
+                         "VitruvianCodeMessageBubble.swift", "VitruvianCodeCodeBlocks.swift",
+                         "VitruvianCodeChatControls.swift", "VitruvianCodeSessionRow.swift"] {
             XCTAssertTrue(names.contains(expected), "\(expected) is among the sources read: \(names.sorted())")
         }
     }
@@ -203,18 +203,29 @@ final class ChatSymbolsTests: XCTestCase {
 
     // MARK: - The view stays free of any one app
 
+    /// Imports of the Vitruvian app (or the standalone VitruvianCode app target),
+    /// excluding the shared `VitruvianCodeCore` / `VitruvianCodeUI` libraries.
+    nonisolated(unsafe) static let forbiddenImport = try! NSRegularExpression(
+        pattern: #"import\s+Vitruvian(?!Code(?:Core|UI)\b)"#
+    )
+
     /// What may not appear in the shared chat view, and why.
     static let forbidden: [(text: String, why: String)] = [
-        ("import Vitruvian", "imports a module of the Vitruvian app"),
         ("UserDefaults", "reads saved settings; an app hands the view what it needs"),
         ("@AppStorage", "reads saved settings; an app hands the view what it needs"),
         ("vitruvian.", "names a Vitruvian saved-settings key"),
         ("vitruvian-error", "names Vitruvian's URL scheme; the app passes its own in"),
-        ("NexusAgentService", "names Vitruvian's service; the view is handed an engine"),
+        ("NexusAgentService", "names Vitruvian's service; the view is handed an engine"), // TODO(brand step 2)
     ]
 
     static func forbiddenUses(in source: String) -> [String] {
-        forbidden.filter { source.contains($0.text) }.map(\.why)
+        var reasons: [String] = []
+        let full = NSRange(source.startIndex..<source.endIndex, in: source)
+        if forbiddenImport.firstMatch(in: source, range: full) != nil {
+            reasons.append("imports a module of the Vitruvian app")
+        }
+        reasons.append(contentsOf: forbidden.filter { source.contains($0.text) }.map(\.why))
+        return reasons
     }
 
     func testTheChatViewNamesNoApp() {
@@ -224,7 +235,7 @@ final class ChatSymbolsTests: XCTestCase {
     }
 
     func testANamedAppIsCaught() {
-        XCTAssertEqual(Self.forbiddenUses(in: "import SwiftUI\nimport NexusAgentCore\n"), [])
+        XCTAssertEqual(Self.forbiddenUses(in: "import SwiftUI\nimport VitruvianCodeCore\n"), [])
         XCTAssertEqual(Self.forbiddenUses(in: "import VitruvianCore\n").count, 1)
         XCTAssertEqual(Self.forbiddenUses(in: "@AppStorage(\"vitruvian.x\") var x = false").count, 2)
         XCTAssertEqual(Self.forbiddenUses(in: "let service = NexusAgentService.shared").count, 1)

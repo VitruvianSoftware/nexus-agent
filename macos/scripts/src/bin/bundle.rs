@@ -20,5 +20,5 @@
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    std::process::exit(nexus_agent_scripts_lib::bundle::run(&args));
+    std::process::exit(vitruvian_code_scripts_lib::bundle::run(&args));
 }

@@ -19,13 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/annotations.test.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/annotations.test.js`.
 
-use nexus_agent_src_lib::annotations::archived_conversation_ids;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vitruvian_code_src_lib::annotations::archived_conversation_ids;
 
 fn make_temp_dir(prefix: &str) -> PathBuf {
     let nanos = SystemTime::now()
@@ -39,7 +39,7 @@ fn make_temp_dir(prefix: &str) -> PathBuf {
 
 #[test]
 fn archived_ids_are_collected_across_data_directories() {
-    let home = make_temp_dir("nexus-annotations");
+    let home = make_temp_dir("vitruvian-code-annotations");
     let app = home.join("antigravity");
     let cli = home.join("antigravity-cli");
     for dir in [&app, &cli] {

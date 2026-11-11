@@ -25,7 +25,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: nexus-agent
+  name: vitruvian-code
   description: macOS menu-bar agent (Swift) + Telegram bot (Node) — DMG via GitHub Releases + npm
   annotations:
     github.com/project-slug: VitruvianSoftware/vitruvian-core
@@ -44,7 +44,7 @@ spec:
   type: application
   lifecycle: production
   owner: nexus-agent-team
-  system: nexus-agent
+  system: vitruvian-code
   consumesApis:
     - tabula-api
     - mcp-slack-api

@@ -1,7 +1,7 @@
 {
   "id": "dev.vitruvian.nexus-agent",
   "name": {
-    "en": "Nexus Agent"
+    "en": "Code"
   },
   "description": {
     "en": "Run your Telegram bot for the Antigravity agent and ask the agent from anywhere with a Quick Prompt",
@@ -134,21 +134,21 @@
       {
         "id": "agent",
         "title": {
-          "en": "Nexus Agent",
-          "pt-BR": "Nexus Agent",
-          "tr": "Nexus Agent",
-          "ru": "Nexus Agent",
-          "es": "Nexus Agent",
-          "sk": "Nexus Agent",
-          "de": "Nexus Agent",
-          "fr": "Nexus Agent",
-          "it": "Nexus Agent",
-          "ja": "Nexus Agent",
-          "ko": "Nexus Agent",
-          "uk": "Nexus Agent",
-          "zh-Hans": "Nexus Agent",
-          "zh-TW": "Nexus Agent",
-          "zh-HK": "Nexus Agent"
+          "en": "Code",
+          "pt-BR": "Code",
+          "tr": "Code",
+          "ru": "Code",
+          "es": "Code",
+          "sk": "Code",
+          "de": "Code",
+          "fr": "Code",
+          "it": "Code",
+          "ja": "Code",
+          "ko": "Code",
+          "uk": "Code",
+          "zh-Hans": "Code",
+          "zh-TW": "Code",
+          "zh-HK": "Code"
         },
         "placement": "island",
         "icon": "paperplane"
@@ -156,21 +156,21 @@
       {
         "id": "settings",
         "title": {
-          "en": "Nexus Agent",
-          "pt-BR": "Nexus Agent",
-          "tr": "Nexus Agent",
-          "ru": "Nexus Agent",
-          "es": "Nexus Agent",
-          "sk": "Nexus Agent",
-          "de": "Nexus Agent",
-          "fr": "Nexus Agent",
-          "it": "Nexus Agent",
-          "ja": "Nexus Agent",
-          "ko": "Nexus Agent",
-          "uk": "Nexus Agent",
-          "zh-Hans": "Nexus Agent",
-          "zh-TW": "Nexus Agent",
-          "zh-HK": "Nexus Agent"
+          "en": "Code",
+          "pt-BR": "Code",
+          "tr": "Code",
+          "ru": "Code",
+          "es": "Code",
+          "sk": "Code",
+          "de": "Code",
+          "fr": "Code",
+          "it": "Code",
+          "ja": "Code",
+          "ko": "Code",
+          "uk": "Code",
+          "zh-Hans": "Code",
+          "zh-TW": "Code",
+          "zh-HK": "Code"
         },
         "placement": "settings"
       }

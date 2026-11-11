@@ -20,7 +20,7 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// How a saved OpenCode conversation is read back into the chat: one reply
 /// per turn, and tool steps that say what they ran.
@@ -45,7 +45,7 @@ final class OpenCodeTranscriptTests: XCTestCase {
             row("user", ["text": "thanks"]),
             row("assistant", ["content": [["type": "text", "text": "Any time."]]]),
         ]
-        let messages = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows))
         XCTAssertEqual(messages.map(\.role), [.user, .agent, .user, .agent])
         let turn = messages[1]
         XCTAssertEqual(turn.toolSteps?.map(\.title), ["bazel build //...", "/a/BUILD"])
@@ -65,14 +65,14 @@ final class OpenCodeTranscriptTests: XCTestCase {
             (["input": [:] as [String: Any]], "execute"),
         ]
         let rows = [row("assistant", ["content": steps.map { tool("execute", state: $0.0) }])]
-        let messages = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows))
         XCTAssertEqual(messages.first?.toolSteps?.map(\.title), steps.map(\.1))
     }
 
     func testLongCodeIsCutToOneShortLine() throws {
         let code = String(repeating: "x", count: 200)
         let rows = [row("assistant", ["content": [tool("execute", state: ["input": ["code": code]])]])]
-        let title = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows)?.first?.toolSteps?.first?.title)
+        let title = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows)?.first?.toolSteps?.first?.title)
         XCTAssertEqual(title.count, 80)
         XCTAssertTrue(title.hasPrefix("execute: x"))
     }
@@ -80,7 +80,7 @@ final class OpenCodeTranscriptTests: XCTestCase {
     func testARunningStepIsNotFinished() throws {
         let rows = [row("assistant", ["content": [tool("bash", state: ["status": "running",
                                                                      "input": ["command": "sleep 9"]])]])]
-        let step = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows)?.first?.toolSteps?.first)
+        let step = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows)?.first?.toolSteps?.first)
         XCTAssertFalse(step.isFinished)
     }
 }

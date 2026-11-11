@@ -18,18 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import NexusAgentCore
-@testable import NexusAgentUI
+import VitruvianCodeCore
+@testable import VitruvianCodeUI
 import XCTest
 
 /// The composer's `/` commands: which the chat runs itself, and which go to
 /// the agent.
 @MainActor
 final class SlashCommandTests: XCTestCase {
-    private let configuration = NexusAgentConfiguration(model: "m1")
+    private let configuration = VitruvianCodeConfiguration(model: "m1")
 
     func testEffortCyclesThroughEveryLevelAndRoundAgain() {
-        typealias S = NexusAgentQuickPromptSession
+        typealias S = VitruvianCodeQuickPromptSession
         XCTAssertEqual(S.nextEffort(after: .automatic), .low)
         XCTAssertEqual(S.nextEffort(after: .low), .medium)
         XCTAssertEqual(S.nextEffort(after: .medium), .high)
@@ -76,10 +76,10 @@ final class SlashCommandTests: XCTestCase {
         XCTAssertEqual(session.messages.filter { $0.role == .user }.last?.text, "implement the migration")
         rig.finishCleanly()
 
-        session.resume(NexusAgentSessionSummary(id: "conv-fork", title: "Base", steps: 1, modified: nil),
-                       configuration: NexusAgentConfiguration(activeProvider: .claude))
+        session.resume(VitruvianCodeSessionSummary(id: "conv-fork", title: "Base", steps: 1, modified: nil),
+                       configuration: VitruvianCodeConfiguration(activeProvider: .claude))
         session.draft = "/fork try alternative approach"
-        XCTAssertEqual(session.submitDraft(configuration: NexusAgentConfiguration(activeProvider: .claude),
+        XCTAssertEqual(session.submitDraft(configuration: VitruvianCodeConfiguration(activeProvider: .claude),
                                            agentPath: "/fake/claude"), .sent)
         XCTAssertTrue(rig.launches.last?.contains("--fork-session") ?? false)
         rig.finishCleanly()
@@ -88,7 +88,7 @@ final class SlashCommandTests: XCTestCase {
 
     func testUpdateChatConfigurationWorksWithoutABotFolderAndSurvivesLoad() {
         let rig = ComposerRig()
-        let engine = NexusAgentEngine(environment: rig.environment, host: rig.host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: rig.host)
         XCTAssertNil(engine.problem)
 
         var updated = engine.configuration
@@ -132,7 +132,7 @@ final class SlashCommandTests: XCTestCase {
         rig.agentExit?(1)
         XCTAssertEqual(session.lastFailedPrompt, "broken")
 
-        session.resume(NexusAgentSessionSummary(id: "conv-ok", title: "Clean", steps: 1, modified: nil),
+        session.resume(VitruvianCodeSessionSummary(id: "conv-ok", title: "Clean", steps: 1, modified: nil),
                        configuration: configuration)
         XCTAssertNil(session.lastFailedPrompt)
         session.stopTranscriptFollower()
@@ -177,11 +177,11 @@ final class SlashCommandTests: XCTestCase {
     func testCostAddsUpTheRepliesAndSaysSo() {
         let session = ComposerRig().session()
         session.messages = [
-            NexusAgentChatMessage(role: .user, text: "a"),
-            NexusAgentChatMessage(role: .agent, text: "b", inputTokens: 100, outputTokens: 20, cachedTokens: 5,
+            VitruvianCodeChatMessage(role: .user, text: "a"),
+            VitruvianCodeChatMessage(role: .agent, text: "b", inputTokens: 100, outputTokens: 20, cachedTokens: 5,
                                   totalCostUSD: 0.01),
-            NexusAgentChatMessage(role: .agent, text: "c", inputTokens: 50, outputTokens: 10, totalCostUSD: 0.02),
-            NexusAgentChatMessage(role: .agent, text: "no figures"),
+            VitruvianCodeChatMessage(role: .agent, text: "c", inputTokens: 50, outputTokens: 10, totalCostUSD: 0.02),
+            VitruvianCodeChatMessage(role: .agent, text: "no figures"),
         ]
         let result = session.runSlashCommand("/cost", configuration: configuration, agentPath: nil,
                                              costSummary: { "total \($0.inputTokens)" })
@@ -193,7 +193,7 @@ final class SlashCommandTests: XCTestCase {
         XCTAssertEqual(totals.replies, 2)
         XCTAssertEqual(session.messages.last?.text, "total 150")
         XCTAssertNil(session.messages.last?.inputTokens, "the note carries no figures to be counted again")
-        XCTAssertEqual(NexusAgentQuickPromptSession.costTotals(of: session.messages), totals)
+        XCTAssertEqual(VitruvianCodeQuickPromptSession.costTotals(of: session.messages), totals)
     }
 
     func testForkNeedsAConversationAndGoesWithTheNextTurnOnly() {
@@ -202,15 +202,15 @@ final class SlashCommandTests: XCTestCase {
         XCTAssertEqual(session.runSlashCommand("/fork", configuration: configuration, agentPath: nil), .nothingToFork)
         XCTAssertFalse(session.forkNextTurn)
 
-        session.resume(NexusAgentSessionSummary(id: "conv-9", title: "Old", steps: 2, modified: nil),
-                       configuration: NexusAgentConfiguration(activeProvider: .claude))
+        session.resume(VitruvianCodeSessionSummary(id: "conv-9", title: "Old", steps: 2, modified: nil),
+                       configuration: VitruvianCodeConfiguration(activeProvider: .claude))
         XCTAssertEqual(session.runSlashCommand("/fork", configuration: configuration, agentPath: nil), .forked)
         XCTAssertTrue(session.forkNextTurn)
-        session.send("go", configuration: NexusAgentConfiguration(activeProvider: .claude), agentPath: "/fake/claude")
+        session.send("go", configuration: VitruvianCodeConfiguration(activeProvider: .claude), agentPath: "/fake/claude")
         XCTAssertFalse(session.forkNextTurn, "the fork is used up by the turn")
         XCTAssertTrue(rig.launches.last?.contains("--fork-session") ?? false, "\(rig.launches)")
         rig.finishCleanly()
-        session.send("again", configuration: NexusAgentConfiguration(activeProvider: .claude), agentPath: "/fake/claude")
+        session.send("again", configuration: VitruvianCodeConfiguration(activeProvider: .claude), agentPath: "/fake/claude")
         XCTAssertFalse(rig.launches.last?.contains("--fork-session") ?? true)
         rig.finishCleanly()
         session.stopTranscriptFollower()
@@ -218,7 +218,7 @@ final class SlashCommandTests: XCTestCase {
 
     func testForkFromTheDrawerResumesAndArms() {
         let session = ComposerRig().session()
-        session.fork(NexusAgentSessionSummary(id: "conv-3", title: "T", steps: 1, modified: nil),
+        session.fork(VitruvianCodeSessionSummary(id: "conv-3", title: "T", steps: 1, modified: nil),
                      configuration: configuration)
         XCTAssertEqual(session.conversationID, "conv-3")
         XCTAssertTrue(session.forkNextTurn)
@@ -228,8 +228,8 @@ final class SlashCommandTests: XCTestCase {
     func testPinsAndNamesGoThroughTheHost() {
         let rig = ComposerRig()
         rig.sessions = [
-            NexusAgentSessionSummary(id: "a", title: "First", steps: 1, modified: nil),
-            NexusAgentSessionSummary(id: "b", title: "Second", steps: 1, modified: nil),
+            VitruvianCodeSessionSummary(id: "a", title: "First", steps: 1, modified: nil),
+            VitruvianCodeSessionSummary(id: "b", title: "Second", steps: 1, modified: nil),
         ]
         let session = rig.session()
         session.refreshSessions(configuration: configuration)

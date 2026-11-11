@@ -1,6 +1,6 @@
 # Third-party notices
 
-Nexus Agent is MIT-licensed (see [`LICENSE`](LICENSE)). The Mac app ships one
+Vitruvian Code is MIT-licensed (see [`LICENSE`](LICENSE)). The Mac app ships one
 piece of software written by others.
 
 ## Mermaid
@@ -12,11 +12,11 @@ A copy ships inside the app, so nothing is fetched from the network to draw one.
 | --- | --- |
 | Version | 11.17.2 |
 | Licence | MIT |
-| File here | [`macos/Sources/NexusAgentUI/Resources/mermaid.min.js`](macos/Sources/NexusAgentUI/Resources/mermaid.min.js), unmodified |
+| File here | [`macos/Sources/VitruvianCodeUI/Resources/mermaid.min.js`](macos/Sources/VitruvianCodeUI/Resources/mermaid.min.js), unmodified |
 | Taken from | `package/dist/mermaid.min.js` in <https://registry.npmjs.org/mermaid/-/mermaid-11.17.2.tgz> |
 | Package integrity (npm) | `sha512-V6K3C8EBdEsPFZXSKMJe6ppQOENxuHARr9GvHX4hh47lAbhMRD9qf4oEK7LoaRQxULMa80/qt5gHO73aCleBBg==` |
 | SHA-256 of the file | `581ed7d74bd9048d0e3a91363927d72ef22942d7722546b27f7cc29e35390eb8` |
-| Licence text shipped in the app | [`macos/Sources/NexusAgentUI/Resources/mermaid-LICENSE.txt`](macos/Sources/NexusAgentUI/Resources/mermaid-LICENSE.txt), the package's own `LICENSE` |
+| Licence text shipped in the app | [`macos/Sources/VitruvianCodeUI/Resources/mermaid-LICENSE.txt`](macos/Sources/VitruvianCodeUI/Resources/mermaid-LICENSE.txt), the package's own `LICENSE` |
 
 The file is Mermaid's own build, which also holds the libraries Mermaid is
 built from. Those it declares for this version, with the licence each is
@@ -48,7 +48,7 @@ about that licence and that size, not about code.
    `macos/Tests/MermaidPageTests.swift`. Those tests draw a diagram with the
    new copy and fail if the page asks the network for anything.
 4. In the monorepo, re-pin the Vitruvian app
-   (`bazel run //apps/desktop/vitruvian:pin_nexus_agent_shared`) and add a line
+   (`bazel run //apps/desktop/vitruvian:pin_vitruvian_code_shared`) and add a line
    to its `UPSTREAM.md`.
 
 ```text

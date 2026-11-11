@@ -18,25 +18,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import NexusAgentUI
+import VitruvianCodeUI
 import XCTest
 
 /// The diff a tool-step card draws for an edit or a write.
 final class LineDiffTests: XCTestCase {
-    typealias Line = NexusAgentLineDiff.Line
+    typealias Line = VitruvianCodeLineDiff.Line
 
     func testWriteIsEveryLineAdded() {
-        XCTAssertEqual(NexusAgentLineDiff.lines(old: nil, new: "a\nb\n"), [Line(.added, "a"), Line(.added, "b")])
+        XCTAssertEqual(VitruvianCodeLineDiff.lines(old: nil, new: "a\nb\n"), [Line(.added, "a"), Line(.added, "b")])
     }
 
     func testCommonPrefixAndSuffixAreContext() {
-        let lines = NexusAgentLineDiff.lines(old: "one\ntwo\nthree", new: "one\nTWO\nthree")
+        let lines = VitruvianCodeLineDiff.lines(old: "one\ntwo\nthree", new: "one\nTWO\nthree")
         XCTAssertEqual(lines, [Line(.context, "one"), Line(.removed, "two"), Line(.added, "TWO"), Line(.context, "three")])
         XCTAssertEqual(lines.map(\.unified), ["  one", "- two", "+ TWO", "  three"])
     }
 
     func testSeparateChangesKeepTheLinesBetweenThem() {
-        let lines = NexusAgentLineDiff.lines(old: "a\nb\nc\nd\ne", new: "a\nB\nc\nd\nE")
+        let lines = VitruvianCodeLineDiff.lines(old: "a\nb\nc\nd\ne", new: "a\nB\nc\nd\nE")
         XCTAssertEqual(lines, [
             Line(.context, "a"), Line(.removed, "b"), Line(.added, "B"),
             Line(.context, "c"), Line(.context, "d"),
@@ -45,15 +45,15 @@ final class LineDiffTests: XCTestCase {
     }
 
     func testDeletionOnly() {
-        XCTAssertEqual(NexusAgentLineDiff.lines(old: "a\nb\nc", new: "a\nc"),
+        XCTAssertEqual(VitruvianCodeLineDiff.lines(old: "a\nb\nc", new: "a\nc"),
                        [Line(.context, "a"), Line(.removed, "b"), Line(.context, "c")])
     }
 
     func testIdenticalTextIsAllContext() {
-        XCTAssertEqual(NexusAgentLineDiff.lines(old: "x\ny", new: "x\ny"), [Line(.context, "x"), Line(.context, "y")])
+        XCTAssertEqual(VitruvianCodeLineDiff.lines(old: "x\ny", new: "x\ny"), [Line(.context, "x"), Line(.context, "y")])
     }
 
     func testEmptyNewIsEveryLineRemoved() {
-        XCTAssertEqual(NexusAgentLineDiff.lines(old: "x\ny", new: ""), [Line(.removed, "x"), Line(.removed, "y")])
+        XCTAssertEqual(VitruvianCodeLineDiff.lines(old: "x\ny", new: ""), [Line(.removed, "x"), Line(.removed, "y")])
     }
 }

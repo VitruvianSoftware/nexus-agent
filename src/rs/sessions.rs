@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/sessions.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/sessions.js`.
 //! Manages persistent `.bot-sessions.json` state for Telegram chat sessions,
 //! session labels, and workspace shortcuts.
 

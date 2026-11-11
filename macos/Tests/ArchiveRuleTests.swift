@@ -20,14 +20,14 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 final class ArchiveRuleTests: XCTestCase {
-    private typealias Layout = NexusAgentSessionSummary
+    private typealias Layout = VitruvianCodeSessionSummary
 
     // Which annotation text counts as archived is checked in SharedCasesTests,
     // from the examples the bot's tests also read
-    // (apps/desktop/nexus-agent/testdata/archive-annotations.json).
+    // (apps/desktop/vitruvian-code/testdata/archive-annotations.json).
 
     func testArchivedIDsAcrossDataDirectories() throws {
         let home = FileManager.default.temporaryDirectory.appendingPathComponent("agy-annotations-\(UUID().uuidString)")

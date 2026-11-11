@@ -19,7 +19,7 @@
 // SOFTWARE.
 
 import Foundation
-import NexusAgentCore
+import VitruvianCodeCore
 import XCTest
 
 /// Claude Code in the Standard or Accept edits mode asks before a tool runs:
@@ -38,8 +38,8 @@ final class BidirectionalApprovalTests: XCTestCase {
         return try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
-    private func claude(_ mode: NexusAgentApprovalMode) -> NexusAgentConfiguration {
-        NexusAgentConfiguration(approvalMode: mode, activeProvider: .claude)
+    private func claude(_ mode: VitruvianCodeApprovalMode) -> VitruvianCodeConfiguration {
+        VitruvianCodeConfiguration(approvalMode: mode, activeProvider: .claude)
     }
 
     private func feed(_ rig: ComposerRig, _ lines: String...) {
@@ -49,36 +49,36 @@ final class BidirectionalApprovalTests: XCTestCase {
     // MARK: - Parsing and the wire format
 
     func testACanUseToolRequestCarriesItsRequestID() {
-        XCTAssertEqual(NexusAgentStreamEvent.parseAll(Self.askBash), [.approval(NexusAgentApprovalRequest(
+        XCTAssertEqual(VitruvianCodeStreamEvent.parseAll(Self.askBash), [.approval(VitruvianCodeApprovalRequest(
             id: "toolu_1", toolName: "Bash", commandOrPath: "echo probe-ok > out.txt", status: .pending,
             requestID: "req-1"))])
     }
 
     func testAllowAndDenyAreControlResponses() throws {
-        let request = NexusAgentApprovalRequest(toolName: "Bash", commandOrPath: "ls", requestID: "req-1")
-        for decision in [NexusAgentApprovalRequest.Status.approved, .sessionAllowed] {
-            let line = try json(XCTUnwrap(NexusAgentSupport.approvalResponseJSON(for: request, decision: decision)))
+        let request = VitruvianCodeApprovalRequest(toolName: "Bash", commandOrPath: "ls", requestID: "req-1")
+        for decision in [VitruvianCodeApprovalRequest.Status.approved, .sessionAllowed] {
+            let line = try json(XCTUnwrap(VitruvianCodeSupport.approvalResponseJSON(for: request, decision: decision)))
             XCTAssertEqual(line["type"] as? String, "control_response")
             let response = try XCTUnwrap(line["response"] as? [String: Any])
             XCTAssertEqual(response["subtype"] as? String, "success")
             XCTAssertEqual(response["request_id"] as? String, "req-1")
             XCTAssertEqual(response["response"] as? [String: String], ["behavior": "allow"])
         }
-        let denied = try json(XCTUnwrap(NexusAgentSupport.approvalResponseJSON(for: request, decision: .denied)))
+        let denied = try json(XCTUnwrap(VitruvianCodeSupport.approvalResponseJSON(for: request, decision: .denied)))
         let answer = try XCTUnwrap((denied["response"] as? [String: Any])?["response"] as? [String: Any])
         XCTAssertEqual(answer["behavior"] as? String, "deny")
         XCTAssertNotNil(answer["message"] as? String, "a deny tells the model why")
     }
 
     func testNothingIsSentWithoutARequestIDOrADecision() {
-        let unanswerable = NexusAgentApprovalRequest(toolName: "Bash", commandOrPath: "ls")
-        XCTAssertNil(NexusAgentSupport.approvalResponseJSON(for: unanswerable, decision: .approved))
-        let pending = NexusAgentApprovalRequest(toolName: "Bash", commandOrPath: "ls", requestID: "r")
-        XCTAssertNil(NexusAgentSupport.approvalResponseJSON(for: pending, decision: .pending))
+        let unanswerable = VitruvianCodeApprovalRequest(toolName: "Bash", commandOrPath: "ls")
+        XCTAssertNil(VitruvianCodeSupport.approvalResponseJSON(for: unanswerable, decision: .approved))
+        let pending = VitruvianCodeApprovalRequest(toolName: "Bash", commandOrPath: "ls", requestID: "r")
+        XCTAssertNil(VitruvianCodeSupport.approvalResponseJSON(for: pending, decision: .pending))
     }
 
     func testThePromptIsOneStreamJSONUserMessage() throws {
-        let line = try json(NexusAgentSupport.stdinUserMessage("hi \"there\""))
+        let line = try json(VitruvianCodeSupport.stdinUserMessage("hi \"there\""))
         XCTAssertEqual(line["type"] as? String, "user")
         let message = try XCTUnwrap(line["message"] as? [String: Any])
         XCTAssertEqual(message["role"] as? String, "user")
@@ -88,21 +88,21 @@ final class BidirectionalApprovalTests: XCTestCase {
     // MARK: - Which turns ask
 
     func testOnlyClaudeInAnAskingModeReadsStandardInput() {
-        for mode in [NexusAgentApprovalMode.standard, .acceptEdits] {
-            let args = NexusAgentSupport.agentArguments(prompt: "hi", configuration: claude(mode), conversationID: nil)
+        for mode in [VitruvianCodeApprovalMode.standard, .acceptEdits] {
+            let args = VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: claude(mode), conversationID: nil)
             XCTAssertEqual(Array(args.prefix(5)), ["-p", "--input-format", "stream-json", "--permission-prompt-tool", "stdio"])
             XCTAssertFalse(args.contains("hi"), "the prompt goes on standard input, not the command line")
         }
-        for mode in [NexusAgentApprovalMode.yolo, .plan] {
-            let args = NexusAgentSupport.agentArguments(prompt: "hi", configuration: claude(mode), conversationID: nil)
+        for mode in [VitruvianCodeApprovalMode.yolo, .plan] {
+            let args = VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: claude(mode), conversationID: nil)
             XCTAssertEqual(Array(args.prefix(2)), ["-p", "hi"])
             XCTAssertFalse(args.contains("--input-format"))
         }
-        let planned = NexusAgentSupport.agentArguments(prompt: "hi", configuration: claude(.standard),
+        let planned = VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: claude(.standard),
                                                        conversationID: nil, planMode: true)
         XCTAssertFalse(planned.contains("--input-format"), "plan mode runs no tools, so asks nothing")
-        let agy = NexusAgentConfiguration(approvalMode: .standard, activeProvider: .antigravity)
-        XCTAssertFalse(NexusAgentSupport.agentArguments(prompt: "hi", configuration: agy, conversationID: nil)
+        let agy = VitruvianCodeConfiguration(approvalMode: .standard, activeProvider: .antigravity)
+        XCTAssertFalse(VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: agy, conversationID: nil)
             .contains("--input-format"))
     }
 

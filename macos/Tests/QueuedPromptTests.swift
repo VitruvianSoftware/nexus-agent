@@ -18,14 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import NexusAgentCore
+import VitruvianCodeCore
 import XCTest
 
 /// A prompt typed while a turn runs waits for it, and goes when it ends
 /// cleanly; Undo Turn puts the files back.
 @MainActor
 final class QueuedPromptTests: XCTestCase {
-    private let configuration = NexusAgentConfiguration(model: "m1")
+    private let configuration = VitruvianCodeConfiguration(model: "m1")
 
     func testReturnWhileRunningQueuesAndACleanEndSendsIt() {
         let rig = ComposerRig()

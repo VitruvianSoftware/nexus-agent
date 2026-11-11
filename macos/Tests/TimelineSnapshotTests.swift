@@ -19,11 +19,11 @@
 // SOFTWARE.
 
 import AppKit
-import NexusAgentCore
+import VitruvianCodeCore
 import SwiftUI
 import XCTest
 
-@testable import NexusAgentUI
+@testable import VitruvianCodeUI
 
 /// Draws the conversation timeline over a six-turn chat to PNGs, so it can
 /// be looked at: idle on the right edge, with the card open on turn 3, and
@@ -33,7 +33,7 @@ import XCTest
 final class TimelineSnapshotTests: XCTestCase {
     private static let size = CGSize(width: 560, height: 520)
 
-    private func conversation() -> [NexusAgentChatMessage] {
+    private func conversation() -> [VitruvianCodeChatMessage] {
         let start = Date(timeIntervalSince1970: 1_792_600_000)
         let pairs: [(String, String)] = [
             ("Why does the release build fail on Intel Macs?",
@@ -46,11 +46,11 @@ final class TimelineSnapshotTests: XCTestCase {
             ("Open a PR", "Opened #4402 with the change and the changelog entry."),
             ("Watch it until it lands", ""),
         ]
-        var messages: [NexusAgentChatMessage] = []
+        var messages: [VitruvianCodeChatMessage] = []
         for (index, pair) in pairs.enumerated() {
-            messages.append(NexusAgentChatMessage(role: .user, text: pair.0,
+            messages.append(VitruvianCodeChatMessage(role: .user, text: pair.0,
                                                   createdAt: start.addingTimeInterval(Double(index) * 420)))
-            if !pair.1.isEmpty { messages.append(NexusAgentChatMessage(role: .agent, text: pair.1)) }
+            if !pair.1.isEmpty { messages.append(VitruvianCodeChatMessage(role: .agent, text: pair.1)) }
         }
         return messages
     }
@@ -58,7 +58,7 @@ final class TimelineSnapshotTests: XCTestCase {
     @MainActor
     func testRendersTheTimeline() throws {
         let messages = conversation()
-        let turns = NexusAgentTimeline.turns(from: messages)
+        let turns = VitruvianCodeTimeline.turns(from: messages)
         XCTAssertEqual(turns.count, 6)
         let now = Date(timeIntervalSince1970: 1_792_600_000 + 3_000)
         let cases: [(name: String, onLeft: Bool, hovered: Int?)] = [
@@ -75,9 +75,9 @@ final class TimelineSnapshotTests: XCTestCase {
                     FakeConversation(messages: messages, onLeft: shot.onLeft)
                         .frame(width: Self.size.width, height: Self.size.height, alignment: .top)
                         .clipped()
-                    NexusAgentTimelineScrubber(
+                    VitruvianCodeTimelineScrubber(
                         turns: turns, activeIndex: 1, onLeft: .constant(shot.onLeft),
-                        strings: NexusAgentChatStrings(), now: now, hovered: shot.hovered, select: { _ in })
+                        strings: VitruvianCodeChatStrings(), now: now, hovered: shot.hovered, select: { _ in })
                         .frame(width: Self.size.width, height: Self.size.height)
                 }
                 .frame(width: Self.size.width, height: Self.size.height)
@@ -97,18 +97,18 @@ final class TimelineSnapshotTests: XCTestCase {
 
 /// The chat's bubbles in a plain stack: ImageRenderer draws no scroll view.
 private struct FakeConversation: View {
-    let messages: [NexusAgentChatMessage]
+    let messages: [VitruvianCodeChatMessage]
     /// The timeline's edge, where the chat leaves it a gutter.
     let onLeft: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(messages) { message in
-                NexusAgentMessageBubble(message: message, strings: NexusAgentChatStrings(), errorScheme: "x-test")
+                VitruvianCodeMessageBubble(message: message, strings: VitruvianCodeChatStrings(), errorScheme: "x-test")
             }
         }
         .padding(14)
-        .padding(onLeft ? .leading : .trailing, NexusAgentTimelineScrubber.gutter(onLeft: onLeft))
+        .padding(onLeft ? .leading : .trailing, VitruvianCodeTimelineScrubber.gutter(onLeft: onLeft))
         .fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -19,11 +19,11 @@
 // SOFTWARE.
 
 import AppKit
-import NexusAgentCore
+import VitruvianCodeCore
 import SwiftUI
 import XCTest
 
-@testable import NexusAgentUI
+@testable import VitruvianCodeUI
 
 /// Draws a reply with a diff step, a table and a highlighted code block to a
 /// PNG, so the layout can be looked at. Bazel keeps the picture in the test's
@@ -32,11 +32,11 @@ final class BubbleSnapshotTests: XCTestCase {
     @MainActor
     func testRendersARichReply() throws {
         let steps = [
-            NexusAgentToolStep(
+            VitruvianCodeToolStep(
                 title: "Edit Sources/App.swift", kind: .edit, filePath: "/repo/Sources/App.swift",
                 diffOld: "let a = 1\nlet b = 2\nprint(a)", diffNew: "let a = 1\nlet b = 3\nprint(a + b)"),
-            NexusAgentToolStep(title: "swift build", kind: .bash, output: "Building…\nerror: missing ;", isError: true),
-            NexusAgentToolStep(title: "Read README.md", isFinished: false, kind: .read),
+            VitruvianCodeToolStep(title: "swift build", kind: .bash, output: "Building…\nerror: missing ;", isError: true),
+            VitruvianCodeToolStep(title: "Read README.md", isFinished: false, kind: .read),
         ]
         let text = """
         ## Result
@@ -57,7 +57,7 @@ final class BubbleSnapshotTests: XCTestCase {
         swift build && echo "ok" # build
         ```
         """
-        let message = NexusAgentChatMessage(
+        let message = VitruvianCodeChatMessage(
             role: .agent, text: text, durationMs: 4200, outputTokens: 900, toolSteps: steps,
             thinkingText: "Considering the edit.", thinkingTokens: 320, thinkingDurationMs: 4200)
 
@@ -81,27 +81,27 @@ final class BubbleSnapshotTests: XCTestCase {
 
 /// The bubble with its tool steps open, as a click would leave it.
 private struct ExpandedBubble: View {
-    let message: NexusAgentChatMessage
+    let message: VitruvianCodeChatMessage
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            NexusAgentMessageBubble(
-                message: message, strings: NexusAgentChatStrings(), errorScheme: "x-test",
+            VitruvianCodeMessageBubble(
+                message: message, strings: VitruvianCodeChatStrings(), errorScheme: "x-test",
                 workingDirectory: "/repo")
-            NexusAgentToolStepRow(
-                step: message.toolSteps![0], strings: NexusAgentChatStrings(), isExpanded: true, toggle: {})
-            NexusAgentToolStepRow(
-                step: message.toolSteps![1], strings: NexusAgentChatStrings(), isExpanded: true, toggle: {})
-            NexusAgentToolStepRow(
-                step: message.toolSteps![2], strings: NexusAgentChatStrings(), isExpanded: false, toggle: {})
+            VitruvianCodeToolStepRow(
+                step: message.toolSteps![0], strings: VitruvianCodeChatStrings(), isExpanded: true, toggle: {})
+            VitruvianCodeToolStepRow(
+                step: message.toolSteps![1], strings: VitruvianCodeChatStrings(), isExpanded: true, toggle: {})
+            VitruvianCodeToolStepRow(
+                step: message.toolSteps![2], strings: VitruvianCodeChatStrings(), isExpanded: false, toggle: {})
             // The code's own lines: ImageRenderer draws no horizontal
             // scroll view, so the blocks above show empty in the picture.
-            NexusAgentCodeBlockView(
+            VitruvianCodeCodeBlockView(
                 language: "swift", bodyText: "// Adds the two.\nfunc add(_ a: Int) -> Int { return a + 1 }\nlet s = \"sum\"",
-                strings: NexusAgentChatStrings()).codeLines
-            NexusAgentCodeBlockView(
+                strings: VitruvianCodeChatStrings()).codeLines
+            VitruvianCodeCodeBlockView(
                 language: "bash", bodyText: "swift build && echo \"ok\" # build\nexport X=$HOME",
-                strings: NexusAgentChatStrings()).codeLines
+                strings: VitruvianCodeChatStrings()).codeLines
         }
     }
 }

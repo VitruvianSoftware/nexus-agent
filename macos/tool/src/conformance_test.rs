@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! The built Nexus Agent tool validates and passes the conformance script.
+//! The built Code tool validates and passes the conformance script.
 //!
-//! Copies built/nexus-agent (dereferencing symlinks) into a scratch dir,
+//! Copies built/vitruvian-code (dereferencing symlinks) into a scratch dir,
 //! creates scratch/home, sets HOME and CFFIXED_USER_HOME, runs
 //! `vitruvian-tool validate` and the conformance binary, and asserts both
 //! exit 0.
@@ -73,12 +73,12 @@ fn conformance_test() {
         .map(PathBuf::from)
         .unwrap_or_else(|_| std::env::temp_dir());
     let scratch = tempfile::tempdir_in(&base).unwrap_or_else(|_| {
-        let p = base.join(format!("nexus-conformance-{}", std::process::id()));
+        let p = base.join(format!("vitruvian-code-conformance-{}", std::process::id()));
         fs::create_dir_all(&p).unwrap();
         tempfile::TempDir::new_in(&p).unwrap()
     });
 
-    let folder = scratch.path().join("nexus-agent");
+    let folder = scratch.path().join("vitruvian-code");
     copy_dir_deref(built, &folder).expect("cannot copy built folder");
 
     let home = scratch.path().join("home");
@@ -139,7 +139,7 @@ fn conformance_test() {
     if failed > 0 {
         panic!("{} of 2 checks failed", failed);
     }
-    println!("the built Nexus Agent tool validates and passes the conformance script");
+    println!("the built Code tool validates and passes the conformance script");
 }
 
 // tempfile is not a dep; provide a minimal fallback

@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust implementation of the Nexus Agent Antigravity bridge, formatter,
+//! Native Rust implementation of the Vitruvian Code Antigravity bridge, formatter,
 //! session store, annotation reader, dotenv loader, and Telegram bot engine.
 
 pub mod agy;
@@ -764,7 +764,7 @@ mod tests {
         assert_eq!(plugins, "• live-context from gh (rules, hooks)");
         assert_eq!(format_plugin_list("{}"), "No plugins installed.");
 
-        let tmp = make_temp_dir("nexus-lib-test");
+        let tmp = make_temp_dir("vitruvian-code-lib-test");
         let skill_dir = tmp.join("skills/my-skill");
         fs::create_dir_all(&skill_dir).unwrap();
         fs::write(skill_dir.join("SKILL.md"), "# Skill").unwrap();
@@ -802,7 +802,7 @@ mod tests {
         assert!(!is_user_authorized(Some(999), &[101, 202]));
         assert!(is_user_authorized(Some(999), &[]));
 
-        let tmp = make_temp_dir("nexus-bot-engine");
+        let tmp = make_temp_dir("vitruvian-code-bot-engine");
         let env_text =
             "TELEGRAM_BOT_TOKEN=test:token\nALLOWED_USER_IDS=100\nAGY_APPROVAL_MODE=plan\n";
         let engine =

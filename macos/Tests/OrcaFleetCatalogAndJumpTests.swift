@@ -19,8 +19,8 @@
 // SOFTWARE.
 
 import Foundation
-import NexusAgentCore
-import NexusAgentUI
+import VitruvianCodeCore
+import VitruvianCodeUI
 import XCTest
 
 @MainActor
@@ -29,7 +29,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
     // MARK: - 27+ Agent CLI Catalog & Stream Parsers
 
     func testCatalogContainsAllOrcaCLIAgentsAndDetectsInstalledBinaries() {
-        let presets = NexusAgentCatalog.allPresets
+        let presets = VitruvianCodeCatalog.allPresets
         XCTAssertGreaterThanOrEqual(presets.count, 27)
 
         let expectedNames: Set<String> = [
@@ -50,7 +50,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
             "/usr/local/bin/gemini",
             "/Users/tester/.local/bin/goose",
         ]
-        let installed = NexusAgentCatalog.installedPresets(
+        let installed = VitruvianCodeCatalog.installedPresets(
             pathVariable: "/usr/bin:/bin",
             home: "/Users/tester",
             isExecutable: { fakeBins.contains($0) },
@@ -59,50 +59,50 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         XCTAssertEqual(Set(installed.map(\.id)), ["codex", "gemini-cli", "goose"])
 
         let codexPreset = presets.first { $0.id == "codex" }!
-        let provider = NexusAgentCatalog.toCLIProvider(codexPreset)
+        let provider = VitruvianCodeCatalog.toCLIProvider(codexPreset)
         XCTAssertEqual(provider.name, "Codex")
         XCTAssertFalse(provider.isBuiltIn)
-        XCTAssertEqual(NexusAgentCatalog.toCLIProvider(presets.first { $0.id == "claude-code" }!), .claude)
+        XCTAssertEqual(VitruvianCodeCatalog.toCLIProvider(presets.first { $0.id == "claude-code" }!), .claude)
     }
 
     func testCodexAndGeminiStreamEventParsers() {
         let codexStart = #"{"type":"thread.started","thread_id":"thr_abc123"}"#
         XCTAssertEqual(
-            NexusAgentCatalog.parseCodexEventLine(codexStart),
-            NexusAgentParsedEvent(kind: .started, sessionID: "thr_abc123")
+            VitruvianCodeCatalog.parseCodexEventLine(codexStart),
+            VitruvianCodeParsedEvent(kind: .started, sessionID: "thr_abc123")
         )
 
         let codexMsg = #"{"type":"item.completed","item":{"id":"msg_1","type":"agent_message","text":"Refactored parser."}}"#
-        let parsedMsg = NexusAgentCatalog.parseCodexEventLine(codexMsg)
+        let parsedMsg = VitruvianCodeCatalog.parseCodexEventLine(codexMsg)
         XCTAssertEqual(parsedMsg?.kind, .text)
         XCTAssertEqual(parsedMsg?.text, "Refactored parser.")
         XCTAssertEqual(parsedMsg?.streamEvent, .text("Refactored parser."))
 
         let codexTool = #"{"type":"item.started","item":{"id":"call_9","type":"command_execution","command":"git status"}}"#
-        let parsedTool = NexusAgentCatalog.parseCodexEventLine(codexTool)
+        let parsedTool = VitruvianCodeCatalog.parseCodexEventLine(codexTool)
         XCTAssertEqual(parsedTool?.kind, .toolUse)
         XCTAssertEqual(parsedTool?.toolName, "git status")
 
         let codexTurnDone = #"{"type":"turn.completed","thread_id":"thr_abc123","usage":{"input_tokens":512,"output_tokens":128}}"#
-        let parsedDone = NexusAgentCatalog.parseCodexEventLine(codexTurnDone)
+        let parsedDone = VitruvianCodeCatalog.parseCodexEventLine(codexTurnDone)
         XCTAssertEqual(parsedDone?.kind, .finished)
         XCTAssertEqual(parsedDone?.inputTokens, 512)
         XCTAssertEqual(parsedDone?.outputTokens, 128)
 
         let geminiInit = #"{"type":"init","session_id":"gem_42"}"#
         XCTAssertEqual(
-            NexusAgentCatalog.parseGeminiEventLine(geminiInit),
-            NexusAgentParsedEvent(kind: .started, sessionID: "gem_42")
+            VitruvianCodeCatalog.parseGeminiEventLine(geminiInit),
+            VitruvianCodeParsedEvent(kind: .started, sessionID: "gem_42")
         )
 
         let geminiDelta = #"{"type":"content_delta","session_id":"gem_42","text":"Hello from Gemini"}"#
         XCTAssertEqual(
-            NexusAgentCatalog.parseGeminiEventLine(geminiDelta),
-            NexusAgentParsedEvent(kind: .text, sessionID: "gem_42", text: "Hello from Gemini")
+            VitruvianCodeCatalog.parseGeminiEventLine(geminiDelta),
+            VitruvianCodeParsedEvent(kind: .text, sessionID: "gem_42", text: "Hello from Gemini")
         )
 
         let geminiResult = #"{"type":"result","session_id":"gem_42","status":"success","stats":{"input_tokens":300,"output_tokens":75}}"#
-        let parsedGeminiDone = NexusAgentCatalog.parseGeminiEventLine(geminiResult)
+        let parsedGeminiDone = VitruvianCodeCatalog.parseGeminiEventLine(geminiResult)
         XCTAssertEqual(parsedGeminiDone?.kind, .finished)
         XCTAssertEqual(parsedGeminiDone?.inputTokens, 300)
         XCTAssertEqual(parsedGeminiDone?.outputTokens, 75)
@@ -118,7 +118,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         let stateDir = "/Users/tester/Library/Application Support/NexusAgent"
         let liveCredPath = "/Users/tester/.claude/.credentials.json"
 
-        let manager = NexusAgentAccountManager(
+        let manager = VitruvianCodeAccountManager(
             stateDirectory: stateDir,
             targetCredentialPaths: ["Claude Code": liveCredPath],
             readFile: { files[$0] },
@@ -131,7 +131,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         let workID = UUID()
         let personalID = UUID()
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let quota = NexusAgentDualQuotaWindow(
+        let quota = VitruvianCodeDualQuotaWindow(
             fiveHourUsedPercent: 42.5,
             fiveHourResetsAt: now.addingTimeInterval(7_200),
             sevenDayUsedPercent: 84.0,
@@ -142,7 +142,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         XCTAssertEqual(quota.fiveHourResetCountdown(from: now), "2h 0m")
         XCTAssertEqual(quota.sevenDayResetCountdown(from: now), "2d 0h")
 
-        manager.addProfile(NexusAgentAccountProfile(
+        manager.addProfile(VitruvianCodeAccountProfile(
             id: workID,
             providerName: "Claude Code",
             accountLabel: "Work",
@@ -151,7 +151,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
             isActive: true,
             quota: quota
         ))
-        manager.addProfile(NexusAgentAccountProfile(
+        manager.addProfile(VitruvianCodeAccountProfile(
             id: personalID,
             providerName: "Claude Code",
             accountLabel: "Personal",
@@ -165,7 +165,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         XCTAssertEqual(manager.activeProfile(for: "Claude Code")?.id, personalID)
         XCTAssertEqual(files[liveCredPath], #"{"token":"personal-secret"}"#)
 
-        let reloaded = NexusAgentAccountManager(
+        let reloaded = VitruvianCodeAccountManager(
             stateDirectory: stateDir,
             targetCredentialPaths: ["Claude Code": liveCredPath],
             readFile: { files[$0] },
@@ -181,10 +181,10 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
     // MARK: - Unified Inbox & Telemetry
 
     func testUnifiedInboxRecordingAndFleetStats() {
-        let inbox = NexusAgentInboxCenter()
+        let inbox = VitruvianCodeInboxCenter()
         XCTAssertEqual(inbox.unreadCount, 0)
 
-        let approvalNotice = NexusAgentTurnNotice(
+        let approvalNotice = VitruvianCodeTurnNotice(
             providerName: "Claude Code",
             text: "Bash: rm -rf build/",
             failed: false,
@@ -194,7 +194,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         XCTAssertEqual(inbox.unreadCount, 1)
         XCTAssertEqual(inbox.entries.first?.category, .needsApproval)
 
-        let completedNotice = NexusAgentTurnNotice(
+        let completedNotice = VitruvianCodeTurnNotice(
             providerName: "Codex",
             text: "All 14 tests pass.",
             failed: false,
@@ -206,7 +206,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
         XCTAssertEqual(inbox.stats.formattedAgentTime, "2m 5s")
         XCTAssertEqual(inbox.unreadCount, 2)
 
-        let failedNotice = NexusAgentTurnNotice(
+        let failedNotice = VitruvianCodeTurnNotice(
             providerName: "Gemini CLI",
             text: "",
             failed: true,
@@ -244,13 +244,13 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
           }
         ]
         """
-        let prs = NexusAgentTaskService.parseGitHubPRs(json: prJSON)
+        let prs = VitruvianCodeTaskService.parseGitHubPRs(json: prJSON)
         XCTAssertEqual(prs.count, 1)
         XCTAssertEqual(prs[0].numberOrKey, "#412")
         XCTAssertEqual(prs[0].branchName, "feat/quota-bar")
         XCTAssertEqual(prs[0].ciPassing, false)
         XCTAssertEqual(prs[0].authorOrAssignee, "wren")
-        XCTAssertTrue(NexusAgentTaskService.worktreePrompt(for: prs[0]).contains("failing"))
+        XCTAssertTrue(VitruvianCodeTaskService.worktreePrompt(for: prs[0]).contains("failing"))
 
         let issueJSON = """
         [
@@ -263,7 +263,7 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
           }
         ]
         """
-        let issues = NexusAgentTaskService.parseGitHubIssues(json: issueJSON)
+        let issues = VitruvianCodeTaskService.parseGitHubIssues(json: issueJSON)
         XCTAssertEqual(issues.count, 1)
         XCTAssertEqual(issues[0].branchName, "issue/89-support-27-cli-agent-harnesses")
     }
@@ -271,27 +271,27 @@ final class OrcaFleetCatalogAndJumpTests: XCTestCase {
     // MARK: - ⌘K Jump Palette Fuzzy Search
 
     func testJumpPaletteFuzzySearchRanking() {
-        let targets: [NexusAgentJumpTarget] = [
-            NexusAgentJumpTarget(id: "1", kind: .session, title: "Refactor Auth Middleware", subtitle: "Claude Code", badge: "Session", payload: "s1"),
-            NexusAgentJumpTarget(id: "2", kind: .worktree, title: "feat-orca-fleet", subtitle: "/worktrees/feat-orca-fleet", badge: "Worktree", payload: "w1"),
-            NexusAgentJumpTarget(id: "3", kind: .agentPreset, title: "Codex", subtitle: "codex exec --json", badge: "Agent", payload: "codex"),
-            NexusAgentJumpTarget(id: "4", kind: .task, title: "#412 Add quota bar", subtitle: "GitHub PR", badge: "PR", payload: "412"),
+        let targets: [VitruvianCodeJumpTarget] = [
+            VitruvianCodeJumpTarget(id: "1", kind: .session, title: "Refactor Auth Middleware", subtitle: "Claude Code", badge: "Session", payload: "s1"),
+            VitruvianCodeJumpTarget(id: "2", kind: .worktree, title: "feat-orca-fleet", subtitle: "/worktrees/feat-orca-fleet", badge: "Worktree", payload: "w1"),
+            VitruvianCodeJumpTarget(id: "3", kind: .agentPreset, title: "Codex", subtitle: "codex exec --json", badge: "Agent", payload: "codex"),
+            VitruvianCodeJumpTarget(id: "4", kind: .task, title: "#412 Add quota bar", subtitle: "GitHub PR", badge: "PR", payload: "412"),
         ]
 
-        let codexHits = NexusAgentJumpSearch.filter(query: "codex", targets: targets)
+        let codexHits = VitruvianCodeJumpSearch.filter(query: "codex", targets: targets)
         XCTAssertEqual(codexHits.first?.id, "3")
 
-        let subseqHits = NexusAgentJumpSearch.filter(query: "fof", targets: targets)
+        let subseqHits = VitruvianCodeJumpSearch.filter(query: "fof", targets: targets)
         XCTAssertEqual(subseqHits.first?.id, "2")
 
-        let prHits = NexusAgentJumpSearch.filter(query: "412", targets: targets)
+        let prHits = VitruvianCodeJumpSearch.filter(query: "412", targets: targets)
         XCTAssertEqual(prHits.first?.id, "4")
     }
 
     func testEnableCatalogPresetPersistsToSavedProvidersAndDetectsInstalledIDs() throws {
         let rig = ComposerRig()
-        let engine = NexusAgentEngine(environment: rig.environment, host: rig.host)
-        let cursorPreset = try XCTUnwrap(NexusAgentCatalog.allPresets.first { $0.id == "cursor-cli" })
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: rig.host)
+        let cursorPreset = try XCTUnwrap(VitruvianCodeCatalog.allPresets.first { $0.id == "cursor-cli" })
 
         engine.enableCatalogPreset(cursorPreset)
         XCTAssertEqual(engine.activeProvider.name, cursorPreset.name)

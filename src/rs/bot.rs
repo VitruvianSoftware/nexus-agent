@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/bot.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/bot.js`.
 //! Implements the Antigravity Telegram Bot command router, inline callback
 //! handlers, media prompt builders, rate-limiting, and Telegram HTTP Bot API.
 

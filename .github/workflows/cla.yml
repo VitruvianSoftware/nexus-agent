@@ -23,7 +23,7 @@ name: CLA Assistant
 # CLA enforcement for VitruvianSoftware/nexus-agent contributors.
 #
 # AUTHORING / EXPORT MODEL: this file is authored in the MONOREPO at
-# nexus-agent/.github/workflows/cla.yml so that Copybara's export_nexus_agent workflow
+# apps/desktop/vitruvian-code/.github/workflows/cla.yml so that Copybara's export_nexus_agent workflow
 # carries it down to the mirror (VitruvianSoftware/nexus-agent) repo root at
 # .github/workflows/cla.yml. It is intentionally NOT listed in copy.bara.sky's
 # `standalone_only` set, so it IS synced. The action below therefore runs IN THE

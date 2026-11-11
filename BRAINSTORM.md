@@ -1,4 +1,4 @@
-# 🚀 Nexus Agent — Feature Brainstorm
+# 🚀 Vitruvian Code — Feature Brainstorm
 
 > 50+ ideas across the **Telegram Bot**, **macOS Desktop App**, and **Quick Prompt** — targeting 10× productivity for software & platform engineers.
 
@@ -122,7 +122,7 @@ After each answer, show action chips relevant to the response content:
 /metrics
 📊 This week: 47 prompts across 3 projects
 ⏱️ Avg response: 8.2s  |  Longest: 4m 12s (terraform apply)
-🏆 Most active workspace: nexus-agent (22 prompts)
+🏆 Most active workspace: vitruvian-code (22 prompts)
 🔥 Streak: 7 days
 ```
 
@@ -172,7 +172,7 @@ You ask the agent to build a feature in a language or framework you don't have i
 A fuzzy-search palette listing all projects, sessions, and commands. Like Raycast but wired to your Gemini context.
 
 ```
-⌘K  →  [ nexus-agent    ● running  3 sessions  ]
+⌘K  →  [ vitruvian-code ● running  3 sessions  ]
         [ bluecentre    ○ idle     1 session   ]
         [ /deploy staging                      ]  ← recent command
         [ /model gemini-2.5-flash              ]

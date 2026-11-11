@@ -20,21 +20,21 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// A provider can be a command the user wrote, with `{prompt}` and `{model}`
 /// standing for the prompt and the model. These are the rules for turning
 /// one into a program and its arguments, for choosing how a provider is run,
 /// and for reading what a command printed. The standalone app's own chat,
 /// removed in step 3c (`QuickPromptWindow.swift`; last shipped in
-/// nexus-agent 1.19.0), was the specification, and "the standalone" below means
+/// nexus-agent-v1.19.0), was the specification, and "the standalone" below means
 /// that chat as it was; where the shared code departs from it, the test
 /// says so.
 final class ProviderCommandTests: XCTestCase {
 
     private func command(_ template: String, prompt: String = "hello", model: String = "m1")
         -> (executable: String, arguments: [String])? {
-        NexusAgentSupport.providerCommand(template: template, prompt: prompt, model: model)
+        VitruvianCodeSupport.providerCommand(template: template, prompt: prompt, model: model)
     }
 
     private func assertCommand(_ template: String, prompt: String = "hello", model: String = "m1",
@@ -108,7 +108,7 @@ final class ProviderCommandTests: XCTestCase {
     }
 
     func testAnEmptyModelBecomesTheStandalonesFixedOne() {
-        XCTAssertEqual(NexusAgentSupport.templateFallbackModel, "gemma4:31b-cloud")
+        XCTAssertEqual(VitruvianCodeSupport.templateFallbackModel, "gemma4:31b-cloud")
         assertCommand("mytool --model {model} {prompt}", model: "",
                       runs: "mytool", ["--model", "gemma4:31b-cloud", "hello"])
         // Only an empty model: one of spaces is passed as it is, as the standalone passes it.
@@ -178,33 +178,33 @@ final class ProviderCommandTests: XCTestCase {
     /// For the templates the app ships and a plain one-word prompt, the
     /// arguments are the ones the standalone's parser gave. Worked out by
     /// hand from `parseProviderTemplate` in the removed
-    /// `QuickPromptWindow.swift` (last shipped in nexus-agent 1.19.0).
+    /// `QuickPromptWindow.swift` (last shipped in nexus-agent-v1.19.0).
     func testOrdinaryTemplatesGiveWhatTheStandaloneGives() {
-        assertCommand(NexusAgentCLIProvider.antigravity.commandTemplate, runs: "agy",
+        assertCommand(VitruvianCodeCLIProvider.antigravity.commandTemplate, runs: "agy",
                       ["-p", "hello", "--output-format", "stream-json", "--dangerously-skip-permissions"])
-        assertCommand(NexusAgentCLIProvider.claude.commandTemplate, runs: "claude", ["-p", "hello"])
-        assertCommand(NexusAgentCLIProvider.ollama.commandTemplate, model: "qwen3", runs: "ollama",
+        assertCommand(VitruvianCodeCLIProvider.claude.commandTemplate, runs: "claude", ["-p", "hello"])
+        assertCommand(VitruvianCodeCLIProvider.ollama.commandTemplate, model: "qwen3", runs: "ollama",
                       ["launch", "claude", "--model", "qwen3", "--", "-p", "hello"])
         assertCommand("ollama run {model} \"{prompt}\"", model: "", runs: "ollama",
                       ["run", "gemma4:31b-cloud", "hello"])
         assertCommand("llm -m {model} {prompt}", runs: "llm", ["-m", "m1", "hello"])
-        assertCommand(NexusAgentCLIProvider.opencode.commandTemplate, runs: "opencode",
+        assertCommand(VitruvianCodeCLIProvider.opencode.commandTemplate, runs: "opencode",
                       ["run", "--format", "json", "hello"])
     }
 
     // MARK: - How a provider is run
 
-    private func provider(_ template: String, id: UUID = UUID()) -> NexusAgentCLIProvider {
-        NexusAgentCLIProvider(id: id, name: "Mine", commandTemplate: template, isBuiltIn: false)
+    private func provider(_ template: String, id: UUID = UUID()) -> VitruvianCodeCLIProvider {
+        VitruvianCodeCLIProvider(id: id, name: "Mine", commandTemplate: template, isBuiltIn: false)
     }
 
     func testTheBuiltInProvidersRunTheirOwnWay() {
-        XCTAssertEqual(NexusAgentCLIProvider.antigravity.route, .antigravity)
-        XCTAssertEqual(NexusAgentCLIProvider.claude.route, .claude)
-        XCTAssertEqual(NexusAgentCLIProvider.ollama.route, .ollama)
-        XCTAssertEqual(NexusAgentCLIProvider.opencode.route, .opencode)
-        XCTAssertEqual(NexusAgentCLIProvider.builtIns.map(\.route), [.antigravity, .claude, .ollama, .opencode])
-        XCTAssertEqual(Set(NexusAgentCLIProvider.builtIns.map(\.id)).count, 4, "each built-in has an id of its own")
+        XCTAssertEqual(VitruvianCodeCLIProvider.antigravity.route, .antigravity)
+        XCTAssertEqual(VitruvianCodeCLIProvider.claude.route, .claude)
+        XCTAssertEqual(VitruvianCodeCLIProvider.ollama.route, .ollama)
+        XCTAssertEqual(VitruvianCodeCLIProvider.opencode.route, .opencode)
+        XCTAssertEqual(VitruvianCodeCLIProvider.builtIns.map(\.route), [.antigravity, .claude, .ollama, .opencode])
+        XCTAssertEqual(Set(VitruvianCodeCLIProvider.builtIns.map(\.id)).count, 4, "each built-in has an id of its own")
     }
 
     func testAnOwnProviderIsRunByTheFirstWordOfItsTemplate() {
@@ -239,7 +239,7 @@ final class ProviderCommandTests: XCTestCase {
     /// standalone's own: Claude with a template that starts with ollama
     /// goes through Ollama.
     func testAnEditedBuiltInIsStillRunByWhatItIs() {
-        func edited(_ builtIn: NexusAgentCLIProvider, _ template: String) -> NexusAgentCLIProvider {
+        func edited(_ builtIn: VitruvianCodeCLIProvider, _ template: String) -> VitruvianCodeCLIProvider {
             var copy = builtIn
             copy.commandTemplate = template
             return copy
@@ -259,19 +259,19 @@ final class ProviderCommandTests: XCTestCase {
     }
 
     func testTheProgramLookedForFollowsTheRoute() {
-        XCTAssertEqual(NexusAgentCLIProvider.antigravity.executableName, "agy")
+        XCTAssertEqual(VitruvianCodeCLIProvider.antigravity.executableName, "agy")
         XCTAssertEqual(provider("/opt/tools/claude -p {prompt}").executableName, "claude",
                        "the standalone runs `claude` by name here, not the path in the template")
         XCTAssertEqual(provider("my-ollama {prompt}").executableName, "ollama")
-        XCTAssertEqual(NexusAgentCLIProvider.opencode.executableName, "opencode")
+        XCTAssertEqual(VitruvianCodeCLIProvider.opencode.executableName, "opencode")
         XCTAssertEqual(provider("/opt/homebrew/bin/opencode run").executableName, "opencode")
     }
 
     func testOnlyClaudeCodeCanRunInAWorktree() {
-        XCTAssertTrue(NexusAgentCLIProvider.claude.supportsWorktree)
-        XCTAssertTrue(NexusAgentCLIProvider.ollama.supportsWorktree)
-        XCTAssertFalse(NexusAgentCLIProvider.antigravity.supportsWorktree)
-        XCTAssertFalse(NexusAgentCLIProvider.opencode.supportsWorktree)
+        XCTAssertTrue(VitruvianCodeCLIProvider.claude.supportsWorktree)
+        XCTAssertTrue(VitruvianCodeCLIProvider.ollama.supportsWorktree)
+        XCTAssertFalse(VitruvianCodeCLIProvider.antigravity.supportsWorktree)
+        XCTAssertFalse(VitruvianCodeCLIProvider.opencode.supportsWorktree)
         XCTAssertFalse(provider("llm {prompt}").supportsWorktree)
     }
 
@@ -288,42 +288,42 @@ final class ProviderCommandTests: XCTestCase {
         + "User request: "
 
     func testThePlanModeWrapperIsTheStandalonesWordForWord() {
-        XCTAssertEqual(NexusAgentSupport.planModePrompt("add a test"), wrapper + "add a test")
-        XCTAssertEqual(NexusAgentSupport.planModePrompt("two\nlines"), wrapper + "two\nlines")
+        XCTAssertEqual(VitruvianCodeSupport.planModePrompt("add a test"), wrapper + "add a test")
+        XCTAssertEqual(VitruvianCodeSupport.planModePrompt("two\nlines"), wrapper + "two\nlines")
     }
 
     func testPlanModeIsFlagsForAgyAndClaudeAndWordsForOllama() {
-        let agy = NexusAgentSupport.agentArguments(prompt: "add a test", configuration: NexusAgentConfiguration(),
+        let agy = VitruvianCodeSupport.agentArguments(prompt: "add a test", configuration: VitruvianCodeConfiguration(),
                                                    conversationID: nil, planMode: true)
         XCTAssertEqual(Array(agy.prefix(2)), ["-p", "add a test"], "agy is told with a flag, the prompt is untouched")
         XCTAssertTrue(agy.contains("plan"))
 
-        let claude = NexusAgentSupport.agentArguments(
-            prompt: "add a test", configuration: NexusAgentConfiguration(activeProvider: .claude),
+        let claude = VitruvianCodeSupport.agentArguments(
+            prompt: "add a test", configuration: VitruvianCodeConfiguration(activeProvider: .claude),
             conversationID: nil, planMode: true)
         XCTAssertEqual(Array(claude.prefix(2)), ["-p", "add a test"])
 
-        let ollama = NexusAgentSupport.agentArguments(
-            prompt: "add a test", configuration: NexusAgentConfiguration(model: "m1", activeProvider: .ollama),
+        let ollama = VitruvianCodeSupport.agentArguments(
+            prompt: "add a test", configuration: VitruvianCodeConfiguration(model: "m1", activeProvider: .ollama),
             conversationID: nil, planMode: true)
         XCTAssertEqual(Array(ollama.prefix(7)), ["launch", "claude", "--model", "m1", "--", "-p", wrapper + "add a test"])
         XCTAssertTrue(ollama.contains("--permission-mode"), "the flags it already passed are still passed")
 
-        let ollamaOff = NexusAgentSupport.agentArguments(
-            prompt: "add a test", configuration: NexusAgentConfiguration(model: "m1", activeProvider: .ollama),
+        let ollamaOff = VitruvianCodeSupport.agentArguments(
+            prompt: "add a test", configuration: VitruvianCodeConfiguration(model: "m1", activeProvider: .ollama),
             conversationID: nil, planMode: false)
         XCTAssertEqual(ollamaOff[6], "add a test")
     }
 
     func testAnOwnProviderRunThroughClaudeOrOllamaGetsThatProvidersArguments() {
-        let throughClaude = NexusAgentSupport.agentArguments(
-            prompt: "hi", configuration: NexusAgentConfiguration(activeProvider: provider("claude -p {prompt}")),
+        let throughClaude = VitruvianCodeSupport.agentArguments(
+            prompt: "hi", configuration: VitruvianCodeConfiguration(activeProvider: provider("claude -p {prompt}")),
             conversationID: "c1")
-        XCTAssertEqual(throughClaude, NexusAgentSupport.agentArguments(
-            prompt: "hi", configuration: NexusAgentConfiguration(activeProvider: .claude), conversationID: "c1"))
+        XCTAssertEqual(throughClaude, VitruvianCodeSupport.agentArguments(
+            prompt: "hi", configuration: VitruvianCodeConfiguration(activeProvider: .claude), conversationID: "c1"))
 
-        let throughOllama = NexusAgentSupport.agentArguments(
-            prompt: "hi", configuration: NexusAgentConfiguration(activeProvider: provider("ollama run {model}")),
+        let throughOllama = VitruvianCodeSupport.agentArguments(
+            prompt: "hi", configuration: VitruvianCodeConfiguration(activeProvider: provider("ollama run {model}")),
             conversationID: nil, ollamaDefaultModel: "llama3.2:latest")
         XCTAssertEqual(Array(throughOllama.prefix(5)), ["launch", "claude", "--model", "llama3.2:latest", "--"])
     }
@@ -332,7 +332,7 @@ final class ProviderCommandTests: XCTestCase {
 
     func testACommandIsGivenTheStandalonesPath() {
         let present: Set<String> = ["/opt/homebrew/bin", "/usr/bin", "/bin"]
-        let environment = NexusAgentSupport.commandEnvironment(
+        let environment = VitruvianCodeSupport.commandEnvironment(
             base: ["PATH": "/custom/bin:/usr/bin", "HOME": "/Users/rig", "NO_COLOR": "0"],
             fileExists: { present.contains($0) })
         XCTAssertEqual(environment["PATH"], "/opt/homebrew/bin:/usr/bin:/bin:/custom/bin:/usr/bin",
@@ -340,14 +340,14 @@ final class ProviderCommandTests: XCTestCase {
         XCTAssertEqual(environment["NO_COLOR"], "1")
         XCTAssertEqual(environment["HOME"], "/Users/rig", "the rest is the app's own")
 
-        let bare = NexusAgentSupport.commandEnvironment(base: [:], fileExists: { _ in false })
+        let bare = VitruvianCodeSupport.commandEnvironment(base: [:], fileExists: { _ in false })
         XCTAssertEqual(bare["PATH"], "/usr/bin:/bin", "with no PATH at all, the standalone's short one")
     }
 
     // MARK: - What a command printed
 
-    private func outcome(_ output: String, errors: String = "", status: Int32) -> NexusAgentCommandOutcome {
-        NexusAgentSupport.commandOutcome(output: Data(output.utf8), errors: Data(errors.utf8), status: status)
+    private func outcome(_ output: String, errors: String = "", status: Int32) -> VitruvianCodeCommandOutcome {
+        VitruvianCodeSupport.commandOutcome(output: Data(output.utf8), errors: Data(errors.utf8), status: status)
     }
 
     func testWhatACommandPrintsIsTheReply() {
@@ -382,15 +382,15 @@ final class ProviderCommandTests: XCTestCase {
 
     func testOutputThatIsNotTextCountsAsNone() {
         let notText = Data([0xFF, 0xFE, 0xFD])
-        XCTAssertEqual(NexusAgentSupport.commandOutcome(output: notText, errors: Data(), status: 0), .noOutput)
-        XCTAssertEqual(NexusAgentSupport.commandOutcome(output: Data(), errors: notText, status: 4),
+        XCTAssertEqual(VitruvianCodeSupport.commandOutcome(output: notText, errors: Data(), status: 0), .noOutput)
+        XCTAssertEqual(VitruvianCodeSupport.commandOutcome(output: Data(), errors: notText, status: 4),
                        .failed(status: 4, errors: ""))
     }
 
     // MARK: - Words
 
     func testTheWordsForACommandThatCannotRunAreTheStandalones() {
-        let strings = NexusAgentHostStrings()
+        let strings = VitruvianCodeHostStrings()
         XCTAssertEqual(strings.invalidCommandTemplate("  "), "Invalid command template:   ")
         XCTAssertEqual(strings.commandNotFound("llm"), "Could not find 'llm' in PATH. Is it installed?")
         XCTAssertEqual(strings.commandExited(status: 3), "Process exited with code 3")

@@ -20,23 +20,23 @@
 
 import AppKit
 import Foundation
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// A host that says nothing and keeps nothing.
-final class ComposerQuietHost: NexusAgentHost {
+final class ComposerQuietHost: VitruvianCodeHost {
     var configuredBotDirectory = ""
     var startsBotAtLaunch = false
     var planMode = false
     var hiddenClaudeSessionIDs: [String] = []
     var chosenProviderID: UUID?
-    var savedProviders: [NexusAgentCLIProvider] = []
+    var savedProviders: [VitruvianCodeCLIProvider] = []
     var promptHistory: [String] = []
     var worktreeMode = false
     var timelineOnLeft = false
-    var strings = NexusAgentHostStrings()
-    var sessionPreferences = NexusAgentSessionPreferences()
-    func turnNeedsApproval(_ notice: NexusAgentTurnNotice) {}
-    func turnFinished(_ notice: NexusAgentTurnNotice, isChatVisible: Bool) {}
+    var strings = VitruvianCodeHostStrings()
+    var sessionPreferences = VitruvianCodeSessionPreferences()
+    func turnNeedsApproval(_ notice: VitruvianCodeTurnNotice) {}
+    func turnFinished(_ notice: VitruvianCodeTurnNotice, isChatVisible: Bool) {}
 }
 
 /// An agent that is started and answers only when the test says, keeping
@@ -51,18 +51,18 @@ final class ComposerRig {
     var inputCloses = 0
     var agentExit: (@MainActor @Sendable (Int32) -> Void)?
     var agentOutput: (@MainActor @Sendable (Data) -> Void)?
-    var sessions: [NexusAgentSessionSummary] = []
+    var sessions: [VitruvianCodeSessionSummary] = []
     let defaults: UserDefaults
     let host = ComposerQuietHost()
 
     init() {
-        let suite = "com.vitruviansoftware.nexus-agent.tests.composer.\(UUID().uuidString)"
+        let suite = "com.vitruviansoftware.vitruvian-code.tests.composer.\(UUID().uuidString)"
         defaults = ScratchDefaults.suite(named: suite)!
         defaults.removePersistentDomain(forName: suite)
     }
 
-    var environment: NexusAgentEngine.Environment {
-        NexusAgentEngine.Environment(
+    var environment: VitruvianCodeEngine.Environment {
+        VitruvianCodeEngine.Environment(
             defaults: defaults,
             home: "/Users/rig",
             processEnvironment: ["PATH": "/usr/bin"],
@@ -82,15 +82,15 @@ final class ComposerRig {
                 launches.append(arguments)
                 agentOutput = onOutput
                 agentExit = onExit
-                return NexusAgentRunningAgent(terminate: { [unowned self] in terminations += 1 },
+                return VitruvianCodeRunningAgent(terminate: { [unowned self] in terminations += 1 },
                                               sendInput: { [unowned self] data in inputs.append(data) },
                                               closeInput: { [unowned self] in inputCloses += 1 })
             },
             listSessions: { [unowned self] _, _, _ in sessions })
     }
 
-    func session() -> NexusAgentQuickPromptSession {
-        let session = NexusAgentQuickPromptSession(environment: environment, host: host)
+    func session() -> VitruvianCodeQuickPromptSession {
+        let session = VitruvianCodeQuickPromptSession(environment: environment, host: host)
         // No git in tests unless a test asks for it.
         session.takeCheckpoint = { _ in nil }
         return session

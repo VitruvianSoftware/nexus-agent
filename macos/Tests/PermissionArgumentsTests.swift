@@ -20,7 +20,7 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// Which permission arguments a chat turn is started with, for every way a
 /// provider is run, every approval mode and plan mode on and off. The one
@@ -33,19 +33,19 @@ import NexusAgentCore
 @MainActor
 final class PermissionArgumentsTests: XCTestCase {
 
-    private final class QuietHost: NexusAgentHost {
+    private final class QuietHost: VitruvianCodeHost {
         var configuredBotDirectory = ""
         var startsBotAtLaunch = false
         var planMode = false
         var hiddenClaudeSessionIDs: [String] = []
         var chosenProviderID: UUID?
-        var savedProviders: [NexusAgentCLIProvider] = []
+        var savedProviders: [VitruvianCodeCLIProvider] = []
         var promptHistory: [String] = []
         var worktreeMode = false
         var timelineOnLeft = false
-        var strings = NexusAgentHostStrings()
-        func turnNeedsApproval(_ notice: NexusAgentTurnNotice) {}
-        func turnFinished(_ notice: NexusAgentTurnNotice, isChatVisible: Bool) {}
+        var strings = VitruvianCodeHostStrings()
+        func turnNeedsApproval(_ notice: VitruvianCodeTurnNotice) {}
+        func turnFinished(_ notice: VitruvianCodeTurnNotice, isChatVisible: Bool) {}
     }
 
     /// Records what would have been started, and starts nothing.
@@ -56,9 +56,9 @@ final class PermissionArgumentsTests: XCTestCase {
         var agentExit: (@MainActor @Sendable (Int32) -> Void)?
         var commandExit: (@MainActor @Sendable (Int32) -> Void)?
 
-        var environment: NexusAgentEngine.Environment {
-            NexusAgentEngine.Environment(
-                defaults: ScratchDefaults.suite(named: "com.vitruviansoftware.nexus-agent.tests.unused")!,
+        var environment: VitruvianCodeEngine.Environment {
+            VitruvianCodeEngine.Environment(
+                defaults: ScratchDefaults.suite(named: "com.vitruviansoftware.vitruvian-code.tests.unused")!,
                 home: "/Users/rig",
                 processEnvironment: ["PATH": "/usr/bin"],
                 stateDirectory: "/Users/rig/state",
@@ -77,12 +77,12 @@ final class PermissionArgumentsTests: XCTestCase {
                 launchAgent: { [unowned self] _, arguments, _, _, _, onExit in
                     agentRuns.append(arguments)
                     agentExit = onExit
-                    return NexusAgentRunningAgent(terminate: {})
+                    return VitruvianCodeRunningAgent(terminate: {})
                 },
                 launchCommand: { [unowned self] path, arguments, _, _, _, _, onExit in
                     commandRuns.append((path, arguments))
                     commandExit = onExit
-                    return NexusAgentRunningAgent(terminate: {})
+                    return VitruvianCodeRunningAgent(terminate: {})
                 })
         }
     }
@@ -90,26 +90,26 @@ final class PermissionArgumentsTests: XCTestCase {
     private static let prompt = "tidy the readme"
     private static let model = "m1"
 
-    private static func own(_ template: String) -> NexusAgentCLIProvider {
-        NexusAgentCLIProvider(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-00000000000A")!,
+    private static func own(_ template: String) -> VitruvianCodeCLIProvider {
+        VitruvianCodeCLIProvider(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-00000000000A")!,
                               name: "My LLM", commandTemplate: template, isBuiltIn: false)
     }
 
     /// The arguments one turn is started with. A model is always set, so
     /// Ollama has no list to ask for first.
-    private func arguments(provider: NexusAgentCLIProvider, approval: NexusAgentApprovalMode,
+    private func arguments(provider: VitruvianCodeCLIProvider, approval: VitruvianCodeApprovalMode,
                            planMode: Bool, worktree: Bool = false, resuming: String? = nil) -> [String]? {
         let world = World()
         let host = QuietHost()
         host.planMode = planMode
         host.worktreeMode = worktree
-        let session = NexusAgentQuickPromptSession(environment: world.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: world.environment, host: host)
         if let resuming {
-            session.resume(NexusAgentSessionSummary(id: resuming, title: "Earlier", steps: 1, modified: nil),
-                           configuration: NexusAgentConfiguration(activeProvider: provider))
+            session.resume(VitruvianCodeSessionSummary(id: resuming, title: "Earlier", steps: 1, modified: nil),
+                           configuration: VitruvianCodeConfiguration(activeProvider: provider))
         }
         session.send(Self.prompt,
-                     configuration: NexusAgentConfiguration(approvalMode: approval, model: Self.model,
+                     configuration: VitruvianCodeConfiguration(approvalMode: approval, model: Self.model,
                                                             activeProvider: provider),
                      agentPath: "/fake/program")
         defer {
@@ -162,8 +162,8 @@ final class PermissionArgumentsTests: XCTestCase {
 
     /// Every cell, written out. Plan mode on is the same for all four
     /// approval modes, which is the point of it.
-    private static let expected: [(route: String, provider: NexusAgentCLIProvider,
-                                   planOff: [NexusAgentApprovalMode: [String]], planOn: [String])] = [
+    private static let expected: [(route: String, provider: VitruvianCodeCLIProvider,
+                                   planOff: [VitruvianCodeApprovalMode: [String]], planOn: [String])] = [
         ("agy", .antigravity,
          [.yolo: ["--dangerously-skip-permissions"],
           .acceptEdits: ["--mode", "accept-edits"],
@@ -203,8 +203,8 @@ final class PermissionArgumentsTests: XCTestCase {
                        "one row for each way a provider is run")
         var cells = 0
         for row in Self.expected {
-            XCTAssertEqual(Set(row.planOff.keys), Set(NexusAgentApprovalMode.allCases), "\(row.route): every mode")
-            for mode in NexusAgentApprovalMode.allCases {
+            XCTAssertEqual(Set(row.planOff.keys), Set(VitruvianCodeApprovalMode.allCases), "\(row.route): every mode")
+            for mode in VitruvianCodeApprovalMode.allCases {
                 for planMode in [false, true] {
                     let cell = "\(row.route), \(mode.rawValue), plan mode \(planMode ? "on" : "off")"
                     guard let started = arguments(provider: row.provider, approval: mode, planMode: planMode) else {
@@ -228,7 +228,7 @@ final class PermissionArgumentsTests: XCTestCase {
     /// The two things a turn can carry besides its approval mode. Each adds
     /// its own flag and nothing else, so neither can let a turn skip the
     /// agent's prompts outside yolo. agy and OpenCode have no worktree flag at all.
-    private static let extras: [(route: String, provider: NexusAgentCLIProvider,
+    private static let extras: [(route: String, provider: VitruvianCodeCLIProvider,
                                  worktree: [String], resume: String)] = [
         ("agy", .antigravity, [], "--conversation"),
         ("Claude", .claude, ["-w"], "--resume"),
@@ -249,7 +249,7 @@ final class PermissionArgumentsTests: XCTestCase {
 
     func testWorktreeModeAddsOnlyItsOwnFlag() throws {
         for row in Self.extras {
-            for mode in NexusAgentApprovalMode.allCases {
+            for mode in VitruvianCodeApprovalMode.allCases {
                 let cell = "\(row.route), \(mode.rawValue)"
                 let plain = try XCTUnwrap(arguments(provider: row.provider, approval: mode, planMode: false))
                 let inWorktree = try XCTUnwrap(arguments(provider: row.provider, approval: mode, planMode: false,
@@ -264,7 +264,7 @@ final class PermissionArgumentsTests: XCTestCase {
     func testAResumedConversationAddsOnlyItsOwnFlag() throws {
         let id = "11111111-2222-3333-4444-555555555555"
         for row in Self.extras {
-            for mode in NexusAgentApprovalMode.allCases {
+            for mode in VitruvianCodeApprovalMode.allCases {
                 let cell = "\(row.route), \(mode.rawValue)"
                 let plain = try XCTUnwrap(arguments(provider: row.provider, approval: mode, planMode: false))
                 let resumed = try XCTUnwrap(arguments(provider: row.provider, approval: mode, planMode: false,
@@ -289,9 +289,9 @@ final class PermissionArgumentsTests: XCTestCase {
     /// A built-in provider's template is not what is run, so the skip flag
     /// in Antigravity's shipped template never reaches agy by that road.
     func testTheSkipFlagInAntigravitysTemplateIsNotPassedOutsideYolo() throws {
-        XCTAssertTrue(NexusAgentCLIProvider.antigravity.commandTemplate.contains("--dangerously-skip-permissions"),
+        XCTAssertTrue(VitruvianCodeCLIProvider.antigravity.commandTemplate.contains("--dangerously-skip-permissions"),
                       "the shipped template names the flag, which is why this is worth checking")
-        for mode in [NexusAgentApprovalMode.acceptEdits, .plan, .standard] {
+        for mode in [VitruvianCodeApprovalMode.acceptEdits, .plan, .standard] {
             let started = try XCTUnwrap(arguments(provider: .antigravity, approval: mode, planMode: false))
             XCTAssertFalse(started.contains("--dangerously-skip-permissions"), mode.rawValue)
         }
@@ -318,11 +318,11 @@ final class PermissionArgumentsTests: XCTestCase {
     func testAnOwnCommandsOwnFlagsArePassedAsWrittenInEveryMode() throws {
         let own = Self.own("llm --dangerously-skip-permissions \"{prompt}\"")
         XCTAssertEqual(own.route, .custom)
-        for mode in NexusAgentApprovalMode.allCases {
+        for mode in VitruvianCodeApprovalMode.allCases {
             let started = try XCTUnwrap(arguments(provider: own, approval: mode, planMode: false))
             XCTAssertEqual(started, ["--dangerously-skip-permissions", Self.prompt], mode.rawValue)
             let planned = try XCTUnwrap(arguments(provider: own, approval: mode, planMode: true))
-            XCTAssertEqual(planned, ["--dangerously-skip-permissions", NexusAgentSupport.planModePrompt(Self.prompt)],
+            XCTAssertEqual(planned, ["--dangerously-skip-permissions", VitruvianCodeSupport.planModePrompt(Self.prompt)],
                            mode.rawValue)
         }
     }

@@ -18,10 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-site_name: nexus-agent
+site_name: Vitruvian Code
 site_description: macOS menu-bar agent (Swift) + Telegram bot (Node) — DMG via GitHub Releases + npm
 repo_url: https://github.com/VitruvianSoftware/vitruvian-core
-edit_uri: edit/main/nexus-agent/docs
+edit_uri: edit/main/apps/desktop/vitruvian-code/docs
 docs_dir: docs
 plugins:
   - techdocs-core

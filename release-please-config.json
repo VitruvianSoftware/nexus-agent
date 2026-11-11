@@ -5,7 +5,7 @@
   "include-v-in-tag": true,
   "tag-separator": "-",
   "packages": {
-    "apps/desktop/nexus-agent": {
+    "apps/desktop/vitruvian-code": {
       "release-type": "node",
       "package-name": "nexus-agent",
       "component": "nexus-agent",
@@ -14,11 +14,11 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "macos/Sources/NexusAgent/Version.swift"
+          "path": "macos/Sources/VitruvianCode/Version.swift"
         },
         {
           "type": "generic",
-          "path": "macos/Sources/NexusAgentToolCore/Version.swift"
+          "path": "macos/Sources/VitruvianCodeToolCore/Version.swift"
         },
         {
           "type": "json",

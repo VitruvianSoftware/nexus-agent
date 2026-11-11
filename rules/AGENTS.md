@@ -13,8 +13,8 @@ through these steps in order.
 
 1. Open Telegram and message [@BotFather](https://t.me/BotFather)
 2. Send `/newbot`
-3. Choose a name (e.g. "My Nexus Bot")
-4. Choose a username (must end in `bot`, e.g. `my_nexus_agent_bot`)
+3. Choose a name (e.g. "My Vitruvian Code Bot")
+4. Choose a username (must end in `bot`, e.g. `my_vitruvian_code_bot`)
 5. Copy the **bot token** that BotFather gives you
 
 ### Step 2: Get Your Telegram User ID

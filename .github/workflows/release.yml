@@ -20,7 +20,7 @@
 
 # Publish-on-version-bump. The monorepo (vitruvian-core) authors nexus-agent's
 # version bump via release-please (bumping .release-please-manifest.json AND
-# macos/Sources/NexusAgent/Version.swift via extra-files), exported here. When
+# macos/Sources/VitruvianCode/Version.swift via extra-files), exported here. When
 # the exported version has no matching tag yet, this is a new release: tag the
 # exported commit, build the universal macOS app, publish the DMGs/ZIP, and
 # update the Homebrew cask -- all with the mirror's existing RELEASE_AUTOMATION_
@@ -115,8 +115,8 @@ jobs:
           name: NexusAgent-${{ matrix.arch }}
           path: |
             macos/.build/release/NexusAgent
-            macos/.build/release/NexusAgent_NexusAgentUI.bundle
-            macos/.build/release/nexus-agent-tool
+            macos/.build/release/VitruvianCode_VitruvianCodeUI.bundle
+            macos/.build/release/vitruvian-code-tool
           if-no-files-found: error
 
   package:
@@ -149,19 +149,19 @@ jobs:
           echo "==> Universal binary architectures:"
           lipo -info /tmp/universal/NexusAgent
           # The resources are the same files for both architectures.
-          cp -R /tmp/arm64/NexusAgent_NexusAgentUI.bundle /tmp/universal/
+          cp -R /tmp/arm64/VitruvianCode_VitruvianCodeUI.bundle /tmp/universal/
           # The tool for the Vitruvian app, one binary for both as well.
           lipo -create \
-            /tmp/arm64/nexus-agent-tool \
-            /tmp/x86_64/nexus-agent-tool \
-            -output /tmp/universal/nexus-agent-tool
-          lipo -info /tmp/universal/nexus-agent-tool
+            /tmp/arm64/vitruvian-code-tool \
+            /tmp/x86_64/vitruvian-code-tool \
+            -output /tmp/universal/vitruvian-code-tool
+          lipo -info /tmp/universal/vitruvian-code-tool
 
       - name: Assemble .app bundles
         run: |
           VERSION="${{ needs.detect.outputs.version }}"
-          rustc --edition 2021 --crate-type lib --crate-name nexus_agent_scripts_lib macos/scripts/src/lib.rs -o "$RUNNER_TEMP/libnexus_agent_scripts_lib.rlib"
-          rustc --edition 2021 macos/scripts/src/bin/bundle.rs -L "$RUNNER_TEMP" --extern nexus_agent_scripts_lib="$RUNNER_TEMP/libnexus_agent_scripts_lib.rlib" -o "$RUNNER_TEMP/bundle-app"
+          rustc --edition 2021 --crate-type lib --crate-name vitruvian_code_scripts_lib macos/scripts/src/lib.rs -o "$RUNNER_TEMP/libvitruvian_code_scripts_lib.rlib"
+          rustc --edition 2021 macos/scripts/src/bin/bundle.rs -L "$RUNNER_TEMP" --extern vitruvian_code_scripts_lib="$RUNNER_TEMP/libvitruvian_code_scripts_lib.rlib" -o "$RUNNER_TEMP/bundle-app"
 
           # Universal
           mkdir -p /tmp/dist-universal
@@ -214,12 +214,13 @@ jobs:
       - name: Zip the tool's folder
         run: |
           VERSION="${{ needs.detect.outputs.version }}"
-          folder="/tmp/tool/nexus-agent"
+          folder="/tmp/tool/vitruvian-code"
           mkdir -p "$folder/bin"
           cp macos/tool/vitruvian-tool.json "$folder/"
-          cp /tmp/universal/nexus-agent-tool "$folder/bin/tool"
+          cp /tmp/universal/vitruvian-code-tool "$folder/bin/tool"
           chmod 755 "$folder/bin/tool"
-          cp macos/Sources/NexusAgentUI/Resources/mermaid.min.js "$folder/bin/"
+          cp macos/Sources/VitruvianCodeUI/Resources/mermaid.min.js "$folder/bin/"
+          # TODO(brand step 2): catalog/sources.json asset name stays nexus-agent-tool-{version}.zip
           asset="nexus-agent-tool-${VERSION}.zip"
           (cd "$folder" && zip -r -X "${GITHUB_WORKSPACE}/${asset}" .)
           cd "${GITHUB_WORKSPACE}"

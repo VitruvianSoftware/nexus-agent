@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/agy.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/agy.js`.
 //! Drives the Antigravity CLI (`agy -p`) in headless and streaming modes,
 //! manages per-chat settings, inspects `conversation_summaries.db`, lists
 //! models/MCP servers/plugins/skills, and extracts image/document paths.

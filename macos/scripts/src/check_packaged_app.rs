@@ -25,7 +25,7 @@ use std::process::Command;
 
 const SCRIPT_NAME: &str = "mermaid.min.js";
 const LICENCE_NAME: &str = "mermaid-LICENSE.txt";
-const UI_RESOURCES: &str = "NexusAgent_NexusAgentUI.bundle";
+const UI_RESOURCES: &str = "VitruvianCode_VitruvianCodeUI.bundle";
 
 fn fail(app: &str, msg: &str) -> i32 {
     eprintln!("error: {}", msg);
@@ -132,7 +132,7 @@ pub fn run(args: &[String]) -> i32 {
     let notices_candidates = [
         script_dir.join("../../THIRD_PARTY_NOTICES.md"),
         script_dir.join("../THIRD_PARTY_NOTICES.md"),
-        PathBuf::from("apps/desktop/nexus-agent/THIRD_PARTY_NOTICES.md"),
+        PathBuf::from("apps/desktop/vitruvian-code/THIRD_PARTY_NOTICES.md"),
         PathBuf::from("THIRD_PARTY_NOTICES.md"),
         PathBuf::from("../THIRD_PARTY_NOTICES.md"),
     ];

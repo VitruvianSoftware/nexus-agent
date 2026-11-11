@@ -19,25 +19,25 @@
 // SOFTWARE.
 
 import AppKit
-import NexusAgentCore
+import VitruvianCodeCore
 import XCTest
 
 /// Attachments for the next turn, and the `@` mention being typed.
 @MainActor
 final class AttachmentTests: XCTestCase {
     func testMentionIsTheLastWordWhenItStartsWithAt() {
-        XCTAssertEqual(NexusAgentMention.activeQuery(in: "look at @src/ma"), "src/ma")
-        XCTAssertEqual(NexusAgentMention.activeQuery(in: "@"), "")
-        XCTAssertNil(NexusAgentMention.activeQuery(in: "look at @src/main.swift "), "a space ends it")
-        XCTAssertNil(NexusAgentMention.activeQuery(in: "mail me@home"))
-        XCTAssertNil(NexusAgentMention.activeQuery(in: ""))
+        XCTAssertEqual(VitruvianCodeMention.activeQuery(in: "look at @src/ma"), "src/ma")
+        XCTAssertEqual(VitruvianCodeMention.activeQuery(in: "@"), "")
+        XCTAssertNil(VitruvianCodeMention.activeQuery(in: "look at @src/main.swift "), "a space ends it")
+        XCTAssertNil(VitruvianCodeMention.activeQuery(in: "mail me@home"))
+        XCTAssertNil(VitruvianCodeMention.activeQuery(in: ""))
     }
 
     func testChoosingAFileReplacesOnlyTheMention() {
-        XCTAssertEqual(NexusAgentMention.replacingActiveQuery(in: "fix @ma", with: "Sources/main.swift"),
+        XCTAssertEqual(VitruvianCodeMention.replacingActiveQuery(in: "fix @ma", with: "Sources/main.swift"),
                        "fix @Sources/main.swift ")
-        XCTAssertEqual(NexusAgentMention.replacingActiveQuery(in: "@", with: "a.txt"), "@a.txt ")
-        XCTAssertEqual(NexusAgentMention.replacingActiveQuery(in: "no mention", with: "a.txt"), "no mention")
+        XCTAssertEqual(VitruvianCodeMention.replacingActiveQuery(in: "@", with: "a.txt"), "@a.txt ")
+        XCTAssertEqual(VitruvianCodeMention.replacingActiveQuery(in: "no mention", with: "a.txt"), "no mention")
     }
 
     func testAttachmentsAreDedupedAndRemovable() {
@@ -56,7 +56,7 @@ final class AttachmentTests: XCTestCase {
         let rig = ComposerRig()
         let session = rig.session()
         session.addAttachment(url: URL(fileURLWithPath: "/tmp/spec.md"))
-        session.send("read it", configuration: NexusAgentConfiguration(activeProvider: .claude),
+        session.send("read it", configuration: VitruvianCodeConfiguration(activeProvider: .claude),
                      agentPath: "/fake/claude")
         XCTAssertTrue(session.attachments.isEmpty)
         XCTAssertTrue(rig.launches.last?.contains(where: { $0.contains("/tmp/spec.md") }) ?? false,
@@ -73,7 +73,7 @@ final class AttachmentTests: XCTestCase {
                                      colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
         pasteboard.clearContents()
         pasteboard.setData(image.tiffRepresentation, forType: .tiff)
-        XCTAssertTrue(NexusAgentQuickPromptSession.pasteboardHasImageOnly(pasteboard))
+        XCTAssertTrue(VitruvianCodeQuickPromptSession.pasteboardHasImageOnly(pasteboard))
 
         let session = ComposerRig().session()
         XCTAssertTrue(session.pasteFromClipboard(pasteboard))
@@ -90,7 +90,7 @@ final class AttachmentTests: XCTestCase {
         defer { pasteboard.releaseGlobally() }
         pasteboard.clearContents()
         pasteboard.setString("hello", forType: .string)
-        XCTAssertFalse(NexusAgentQuickPromptSession.pasteboardHasImageOnly(pasteboard))
+        XCTAssertFalse(VitruvianCodeQuickPromptSession.pasteboardHasImageOnly(pasteboard))
         XCTAssertFalse(ComposerRig().session().pasteFromClipboard(pasteboard))
     }
 

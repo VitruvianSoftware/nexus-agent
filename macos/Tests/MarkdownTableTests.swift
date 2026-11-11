@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import NexusAgentCore
+import VitruvianCodeCore
 import XCTest
 
 /// GitHub-style pipe tables in a reply's prose.
 final class MarkdownTableTests: XCTestCase {
     func testParsesHeaderDelimiterAndRows() {
-        let blocks = NexusAgentMarkdownBlock.parse("""
+        let blocks = VitruvianCodeMarkdownBlock.parse("""
         Intro line
         | Name | Size |
         | --- | :---: |
@@ -40,33 +40,33 @@ final class MarkdownTableTests: XCTestCase {
     }
 
     func testOuterPipesAreOptional() {
-        let blocks = NexusAgentMarkdownBlock.parse("a | b\n--|:-:\n1 | 2")
+        let blocks = VitruvianCodeMarkdownBlock.parse("a | b\n--|:-:\n1 | 2")
         XCTAssertEqual(blocks, [.table(headers: ["a", "b"], rows: [["1", "2"]])])
     }
 
     func testEscapedPipeStaysInTheCell() {
-        let blocks = NexusAgentMarkdownBlock.parse("| op | means |\n|---|---|\n| `a \\| b` | or |")
+        let blocks = VitruvianCodeMarkdownBlock.parse("| op | means |\n|---|---|\n| `a \\| b` | or |")
         XCTAssertEqual(blocks, [.table(headers: ["op", "means"], rows: [["`a | b`", "or"]])])
     }
 
     func testShortRowsArePaddedAndLongRowsCut() {
-        let blocks = NexusAgentMarkdownBlock.parse("| a | b | c |\n|---|---|---|\n| 1 |\n| 1 | 2 | 3 | 4 |")
+        let blocks = VitruvianCodeMarkdownBlock.parse("| a | b | c |\n|---|---|---|\n| 1 |\n| 1 | 2 | 3 | 4 |")
         XCTAssertEqual(blocks, [.table(headers: ["a", "b", "c"], rows: [["1", "", ""], ["1", "2", "3"]])])
     }
 
     func testHeaderOnlyTable() {
-        XCTAssertEqual(NexusAgentMarkdownBlock.parse("| a | b |\n| - | - |"), [.table(headers: ["a", "b"], rows: [])])
+        XCTAssertEqual(VitruvianCodeMarkdownBlock.parse("| a | b |\n| - | - |"), [.table(headers: ["a", "b"], rows: [])])
     }
 
     func testBlankLineEndsTheTable() {
-        let blocks = NexusAgentMarkdownBlock.parse("| a |\n| --- |\n| 1 |\n\n| not a row |")
+        let blocks = VitruvianCodeMarkdownBlock.parse("| a |\n| --- |\n| 1 |\n\n| not a row |")
         XCTAssertEqual(blocks, [.table(headers: ["a"], rows: [["1"]]), .paragraph(text: "| not a row |")])
     }
 
     func testNotATableWithoutAMatchingDelimiterRow() {
         // A pipe in prose, a delimiter of the wrong width, a plain divider.
-        XCTAssertEqual(NexusAgentMarkdownBlock.parse("use a | b here\nnext"), [.paragraph(text: "use a | b here\nnext")])
-        XCTAssertEqual(NexusAgentMarkdownBlock.parse("| a | b |\n| --- |"), [.paragraph(text: "| a | b |\n| --- |")])
-        XCTAssertEqual(NexusAgentMarkdownBlock.parse("text\n---"), [.paragraph(text: "text"), .divider])
+        XCTAssertEqual(VitruvianCodeMarkdownBlock.parse("use a | b here\nnext"), [.paragraph(text: "use a | b here\nnext")])
+        XCTAssertEqual(VitruvianCodeMarkdownBlock.parse("| a | b |\n| --- |"), [.paragraph(text: "| a | b |\n| --- |")])
+        XCTAssertEqual(VitruvianCodeMarkdownBlock.parse("text\n---"), [.paragraph(text: "text"), .divider])
     }
 }

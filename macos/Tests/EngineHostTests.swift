@@ -20,7 +20,7 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// The shared engine asks the app it runs in for its settings, its text and
 /// how the user hears about a turn. These tests give it a host that only
@@ -36,26 +36,26 @@ final class EngineHostTests: XCTestCase {
 
     /// A host whose settings are plain values the test can change at any
     /// time, and which remembers what it was told.
-    private final class RecordingHost: NexusAgentHost {
+    private final class RecordingHost: VitruvianCodeHost {
         var configuredBotDirectory = ""
         var startsBotAtLaunch = false
         var planMode = false
         var hiddenClaudeSessionIDs: [String] = []
         var chosenProviderID: UUID?
         var chosenModels: [UUID: String] = [:]
-        var savedProviders: [NexusAgentCLIProvider] = []
+        var savedProviders: [VitruvianCodeCLIProvider] = []
         var promptHistory: [String] = [] {
             didSet { promptHistoryWrites += 1 }
         }
         var promptHistoryWrites = 0
         var worktreeMode = false
         var timelineOnLeft = false
-        var strings = NexusAgentHostStrings()
-        var approvals: [NexusAgentTurnNotice] = []
-        var finished: [(notice: NexusAgentTurnNotice, isChatVisible: Bool)] = []
+        var strings = VitruvianCodeHostStrings()
+        var approvals: [VitruvianCodeTurnNotice] = []
+        var finished: [(notice: VitruvianCodeTurnNotice, isChatVisible: Bool)] = []
 
-        func turnNeedsApproval(_ notice: NexusAgentTurnNotice) { approvals.append(notice) }
-        func turnFinished(_ notice: NexusAgentTurnNotice, isChatVisible: Bool) {
+        func turnNeedsApproval(_ notice: VitruvianCodeTurnNotice) { approvals.append(notice) }
+        func turnFinished(_ notice: VitruvianCodeTurnNotice, isChatVisible: Bool) {
             finished.append((notice, isChatVisible))
         }
     }
@@ -65,7 +65,7 @@ final class EngineHostTests: XCTestCase {
     /// real files, when it is a temporary one that `tearDown` removes.
     @MainActor
     private final class Rig {
-        let domain = "com.vitruviansoftware.nexus-agent.tests.engine-host.\(UUID().uuidString)"
+        let domain = "com.vitruviansoftware.vitruvian-code.tests.engine-host.\(UUID().uuidString)"
         let defaults: UserDefaults
         let home: String
         let state: String
@@ -149,7 +149,7 @@ final class EngineHostTests: XCTestCase {
             defaults = ScratchDefaults.suite(named: domain)!
             defaults.removePersistentDomain(forName: domain)
             if realHome {
-                home = NSTemporaryDirectory() + "nexus-agent-host-tests-\(UUID().uuidString)"
+                home = NSTemporaryDirectory() + "vitruvian-code-host-tests-\(UUID().uuidString)"
                 try? FileManager.default.createDirectory(atPath: home, withIntermediateDirectories: true)
             } else {
                 home = "/Users/rig"
@@ -167,14 +167,14 @@ final class EngineHostTests: XCTestCase {
 
         /// Writes a Claude session file where the app's Claude parser looks.
         func writeClaudeSession(id: String, prompt: String) {
-            let folder = home + "/.claude/projects/-tmp-nexus-agent-host-tests"
+            let folder = home + "/.claude/projects/-tmp-vitruvian-code-host-tests"
             try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
             let line = #"{"type":"user","message":{"content":"\#(prompt)"}}"# + "\n"
             try? line.write(toFile: folder + "/\(id).jsonl", atomically: true, encoding: .utf8)
         }
 
-        var environment: NexusAgentEngine.Environment {
-            NexusAgentEngine.Environment(
+        var environment: VitruvianCodeEngine.Environment {
+            VitruvianCodeEngine.Environment(
                 defaults: defaults,
                 home: home,
                 processEnvironment: ["PATH": "/usr/bin"],
@@ -201,22 +201,22 @@ final class EngineHostTests: XCTestCase {
                     agentRuns.append((path, arguments, directory))
                     agentOutput = onOutput
                     agentExit = onExit
-                    return NexusAgentRunningAgent(terminate: {})
+                    return VitruvianCodeRunningAgent(terminate: {})
                 },
                 // Claude's sessions are read from the files under `home`,
                 // with the list the session passes in: that list is what is
                 // under test, so it is recorded as well as used.
                 listSessions: { [unowned self] directory, provider, hidden in
                     listedHidden.append(hidden)
-                    guard provider.id == NexusAgentCLIProvider.claude.id else { return [] }
-                    return NexusAgentSessionSummary.parseClaudeSessions(home: home, directory: directory,
+                    guard provider.id == VitruvianCodeCLIProvider.claude.id else { return [] }
+                    return VitruvianCodeSessionSummary.parseClaudeSessions(home: home, directory: directory,
                                                                         appHidden: hidden)
                 },
                 transcriptPath: { [unowned self] id, provider in
-                    NexusAgentEngine.transcriptPath(home: home, conversationID: id, provider: provider)
+                    VitruvianCodeEngine.transcriptPath(home: home, conversationID: id, provider: provider)
                 },
                 readTranscriptRaw: { [unowned self] id, provider in
-                    NexusAgentEngine.transcriptPath(home: home, conversationID: id, provider: provider)
+                    VitruvianCodeEngine.transcriptPath(home: home, conversationID: id, provider: provider)
                         .flatMap { try? String(contentsOfFile: $0, encoding: .utf8) }
                 },
                 runProgram: { @MainActor [unowned self] name, arguments in
@@ -232,7 +232,7 @@ final class EngineHostTests: XCTestCase {
                     commandOutput = onOutput
                     commandErrors = onErrors
                     commandExit = onExit
-                    return NexusAgentRunningAgent(terminate: { [unowned self] in commandTerminations += 1 })
+                    return VitruvianCodeRunningAgent(terminate: { [unowned self] in commandTerminations += 1 })
                 },
                 runSqlite: { [unowned self] database, sql, readsRows in
                     sqliteRuns.append((database, sql, readsRows))
@@ -260,8 +260,8 @@ final class EngineHostTests: XCTestCase {
         }
     }
 
-    private func claudeConfiguration() -> NexusAgentConfiguration {
-        NexusAgentConfiguration(activeProvider: .claude)
+    private func claudeConfiguration() -> VitruvianCodeConfiguration {
+        VitruvianCodeConfiguration(activeProvider: .claude)
     }
 
     // MARK: - Settings are read from the host, live
@@ -270,7 +270,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         host.configuredBotDirectory = ""
         XCTAssertEqual(engine.botDirectory, "/Users/rig/.config/nexus-agent")
@@ -292,7 +292,7 @@ final class EngineHostTests: XCTestCase {
         // is the one that was read.
         rig.files[rig.defaultBot + "/.env"] = "TELEGRAM_BOT_TOKEN=9:standard-folder\n"
         rig.files[rig.home + "/elsewhere/.env"] = "TELEGRAM_BOT_TOKEN=1:abc\n"
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.load()
         XCTAssertEqual(engine.configuration.botToken, "1:abc")
@@ -314,7 +314,7 @@ final class EngineHostTests: XCTestCase {
 
     /// The four settings a lost file must not take away: without them the
     /// bot is open to anyone and every permission prompt is skipped.
-    private func assertHoldsGoodSettings(_ engine: NexusAgentEngine, _ when: String,
+    private func assertHoldsGoodSettings(_ engine: VitruvianCodeEngine, _ when: String,
                                          file: StaticString = #filePath, line: UInt = #line) {
         let held = engine.configuration
         XCTAssertEqual(held.approvalMode, .standard, "approval mode, \(when)", file: file, line: line)
@@ -332,7 +332,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let env = rig.defaultBot + "/.env"
         rig.files[env] = Self.goodEnv
-        let engine = NexusAgentEngine(environment: rig.environment, host: RecordingHost())
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: RecordingHost())
         engine.load()
         assertHoldsGoodSettings(engine, "read from a good file")
 
@@ -363,7 +363,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let env = rig.defaultBot + "/.env"
         rig.files[env] = Self.goodEnv
-        let engine = NexusAgentEngine(environment: rig.environment, host: RecordingHost())
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: RecordingHost())
         engine.load()
         assertHoldsGoodSettings(engine, "read from a good file")
 
@@ -372,7 +372,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(engine.configuration.botToken, "")
         XCTAssertEqual(engine.configuration.allowedUserIDs, "")
         XCTAssertEqual(engine.configuration.model, "")
-        XCTAssertEqual(engine.configuration.approvalMode, NexusAgentConfiguration().approvalMode)
+        XCTAssertEqual(engine.configuration.approvalMode, VitruvianCodeConfiguration().approvalMode)
 
         // And once the settings are gone, an unreadable file has nothing
         // to keep: the removed file's settings do not come back.
@@ -391,10 +391,10 @@ final class EngineHostTests: XCTestCase {
             let env = rig.defaultBot + "/.env"
             rig.files[env] = blank ? "\n" : Self.goodEnv
             if !blank { rig.unreadable = [env] }
-            let engine = NexusAgentEngine(environment: rig.environment, host: RecordingHost())
+            let engine = VitruvianCodeEngine(environment: rig.environment, host: RecordingHost())
             engine.load()
             XCTAssertEqual(engine.configuration.botToken, "", blank ? "blank" : "unreadable")
-            XCTAssertEqual(engine.configuration.approvalMode, NexusAgentConfiguration().approvalMode)
+            XCTAssertEqual(engine.configuration.approvalMode, VitruvianCodeConfiguration().approvalMode)
         }
     }
 
@@ -406,7 +406,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let host = RecordingHost()
         rig.files[rig.defaultBot + "/.env"] = Self.goodEnv
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
         engine.load()
         assertHoldsGoodSettings(engine, "read from the standard folder")
 
@@ -424,9 +424,9 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let env = rig.defaultBot + "/.env"
         rig.files[rig.defaultBot] = ""
-        let engine = NexusAgentEngine(environment: rig.environment, host: RecordingHost())
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: RecordingHost())
         engine.load()
-        XCTAssertTrue(engine.save(NexusAgentConfiguration(botToken: "7:good", allowedUserIDs: "11,22",
+        XCTAssertTrue(engine.save(VitruvianCodeConfiguration(botToken: "7:good", allowedUserIDs: "11,22",
                                                           approvalMode: .standard, model: "m-good")))
         rig.unreadable = [env]
         engine.load()
@@ -438,7 +438,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let host = RecordingHost()
         host.planMode = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
         XCTAssertTrue(session.planMode)
         session.planMode = false
@@ -457,7 +457,7 @@ final class EngineHostTests: XCTestCase {
         host.configuredBotDirectory = "~/elsewhere"
         rig.files[rig.defaultBot + "/src/bot.js"] = ""
         XCTAssertNil(rig.files[rig.home + "/elsewhere/src/bot.js"])
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.start()
 
@@ -469,7 +469,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         // With auto-start off the bot is not even tried; with it on the
         // engine tries, and with no bot installed says why.
@@ -478,7 +478,7 @@ final class EngineHostTests: XCTestCase {
 
         let optedIn = RecordingHost()
         optedIn.startsBotAtLaunch = true
-        let other = NexusAgentEngine(environment: rig.environment, host: optedIn)
+        let other = VitruvianCodeEngine(environment: rig.environment, host: optedIn)
         other.startOncePerLaunch()
         XCTAssertEqual(other.problem, .missingBot)
     }
@@ -489,7 +489,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         XCTAssertEqual(engine.activeProvider, .antigravity)
         engine.load()
@@ -501,15 +501,15 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.updateActiveProvider(.claude)
-        XCTAssertEqual(host.chosenProviderID, NexusAgentCLIProvider.claude.id)
+        XCTAssertEqual(host.chosenProviderID, VitruvianCodeCLIProvider.claude.id)
         XCTAssertEqual(engine.activeProvider, .claude)
 
         // The property's setter is the same road.
         engine.activeProvider = .ollama
-        XCTAssertEqual(host.chosenProviderID, NexusAgentCLIProvider.ollama.id)
+        XCTAssertEqual(host.chosenProviderID, VitruvianCodeCLIProvider.ollama.id)
         XCTAssertEqual(engine.configuration.activeProvider, .ollama)
     }
 
@@ -519,7 +519,7 @@ final class EngineHostTests: XCTestCase {
         let host = RecordingHost()
         rig.files[rig.defaultBot] = ""
         rig.files[rig.defaultBot + "/.env"] = "TELEGRAM_BOT_TOKEN=1:abc\n"
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
         engine.updateActiveProvider(.claude)
 
         engine.load()
@@ -545,7 +545,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(engine.activeProvider, .claude, "showing the page keeps the choice")
 
         // The next launch: another engine, the same saved settings.
-        let relaunched = NexusAgentEngine(environment: rig.environment, host: host)
+        let relaunched = VitruvianCodeEngine(environment: rig.environment, host: host)
         XCTAssertEqual(relaunched.activeProvider, .claude, "a new engine starts on the choice")
         relaunched.load()
         XCTAssertEqual(relaunched.activeProvider, .claude)
@@ -556,7 +556,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let host = RecordingHost()
         host.chosenProviderID = UUID(uuidString: "DEADBEEF-0000-0000-0000-000000000000")
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         XCTAssertEqual(engine.activeProvider, .antigravity)
         engine.load()
@@ -567,11 +567,11 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        var edited = NexusAgentCLIProvider.claude
+        var edited = VitruvianCodeCLIProvider.claude
         edited.commandTemplate = "claude -p \"{prompt}\" --model {model}"
         host.savedProviders = [edited]
         host.chosenProviderID = edited.id
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         XCTAssertEqual(engine.providers, [.antigravity, edited, .ollama, .opencode])
         XCTAssertEqual(engine.activeProvider.commandTemplate, edited.commandTemplate,
@@ -582,11 +582,11 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let own = NexusAgentCLIProvider(id: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!,
+        let own = VitruvianCodeCLIProvider(id: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!,
                                         name: "My script", commandTemplate: "/usr/local/bin/ask {prompt}",
                                         isBuiltIn: false)
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
-        XCTAssertEqual(engine.providers, NexusAgentCLIProvider.builtIns, "with nothing saved, the four built in")
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
+        XCTAssertEqual(engine.providers, VitruvianCodeCLIProvider.builtIns, "with nothing saved, the four built in")
 
         // Read live: the list follows the host without a new engine.
         host.savedProviders = [own]
@@ -608,17 +608,17 @@ final class EngineHostTests: XCTestCase {
     /// entry that merely carries a built-in's id, but is marked as the user's
     /// own, changes nothing and is not listed a second time.
     func testABuiltInsCommandIsTakenOnlyFromABuiltInEntry() {
-        var impostor = NexusAgentCLIProvider.claude
+        var impostor = VitruvianCodeCLIProvider.claude
         impostor.commandTemplate = "evil -p \"{prompt}\""
         impostor.isBuiltIn = false
-        XCTAssertEqual(NexusAgentCLIProvider.available(saved: [impostor]), NexusAgentCLIProvider.builtIns,
+        XCTAssertEqual(VitruvianCodeCLIProvider.available(saved: [impostor]), VitruvianCodeCLIProvider.builtIns,
                        "an own entry with a built-in's id leaves the built-in as it is, and is not listed again")
 
-        var edited = NexusAgentCLIProvider.claude
+        var edited = VitruvianCodeCLIProvider.claude
         edited.commandTemplate = "claude -p \"{prompt}\" --model {model}"
-        XCTAssertEqual(NexusAgentCLIProvider.available(saved: [impostor, edited]),
+        XCTAssertEqual(VitruvianCodeCLIProvider.available(saved: [impostor, edited]),
                        [.antigravity, edited, .ollama, .opencode], "the built-in entry still supplies the edit")
-        XCTAssertEqual(NexusAgentCLIProvider.available(saved: [edited, impostor]),
+        XCTAssertEqual(VitruvianCodeCLIProvider.available(saved: [edited, impostor]),
                        [.antigravity, edited, .ollama, .opencode], "whichever comes first")
     }
 
@@ -636,24 +636,24 @@ final class EngineHostTests: XCTestCase {
         [{"id":"8F2B6C1E-5D0A-4E7B-9C3F-1A2B3C4D5E6F","name":"Local llama","commandTemplate":"llama-cli -m {model} -p \"{prompt}\"","isBuiltIn":false},{"id":"00000000-0000-0000-0000-0000000000AA","name":"Not really built in","commandTemplate":"x","isBuiltIn":true}]
         """#
         let decoder = JSONDecoder()
-        let builtIn = try decoder.decode([NexusAgentCLIProvider].self, from: Data(builtInBlob.utf8))
-        let custom = try decoder.decode([NexusAgentCLIProvider].self, from: Data(customBlob.utf8))
+        let builtIn = try decoder.decode([VitruvianCodeCLIProvider].self, from: Data(builtInBlob.utf8))
+        let custom = try decoder.decode([VitruvianCodeCLIProvider].self, from: Data(customBlob.utf8))
 
-        var antigravity = NexusAgentCLIProvider.antigravity
+        var antigravity = VitruvianCodeCLIProvider.antigravity
         antigravity.commandTemplate = "agy -p \"{prompt}\" --effort high"
-        let own = NexusAgentCLIProvider(id: UUID(uuidString: "8F2B6C1E-5D0A-4E7B-9C3F-1A2B3C4D5E6F")!,
+        let own = VitruvianCodeCLIProvider(id: UUID(uuidString: "8F2B6C1E-5D0A-4E7B-9C3F-1A2B3C4D5E6F")!,
                                         name: "Local llama", commandTemplate: "llama-cli -m {model} -p \"{prompt}\"",
                                         isBuiltIn: false)
         // As the standalone's Settings lists them: a built-in keeps today's
         // name and takes only the saved command; an entry marked built-in
         // that is not one of the three is dropped.
-        let listed = NexusAgentCLIProvider.available(saved: builtIn + custom)
+        let listed = VitruvianCodeCLIProvider.available(saved: builtIn + custom)
         XCTAssertEqual(listed, [antigravity, .claude, .ollama, .opencode, own])
         // That app's choice when none is saved is Antigravity as listed,
         // edited command included; an id it does not know is the built-in.
-        XCTAssertEqual(NexusAgentCLIProvider.chosen(id: nil, among: listed), antigravity)
-        XCTAssertEqual(NexusAgentCLIProvider.chosen(id: own.id, among: listed), own)
-        XCTAssertEqual(NexusAgentCLIProvider.chosen(id: UUID(), among: listed), .antigravity)
+        XCTAssertEqual(VitruvianCodeCLIProvider.chosen(id: nil, among: listed), antigravity)
+        XCTAssertEqual(VitruvianCodeCLIProvider.chosen(id: own.id, among: listed), own)
+        XCTAssertEqual(VitruvianCodeCLIProvider.chosen(id: UUID(), among: listed), .antigravity)
 
         // And written back under the same four names, with the id as the
         // capitals-and-dashes text that app's decoder expects.
@@ -662,15 +662,15 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(written?.first.map { Set($0.keys) }, ["id", "name", "commandTemplate", "isBuiltIn"])
         XCTAssertEqual(written?.first?["id"] as? String, "8F2B6C1E-5D0A-4E7B-9C3F-1A2B3C4D5E6F")
         XCTAssertEqual(written?.first?["isBuiltIn"] as? Bool, false)
-        XCTAssertEqual(try decoder.decode([NexusAgentCLIProvider].self, from: JSONEncoder().encode(custom)), custom)
+        XCTAssertEqual(try decoder.decode([VitruvianCodeCLIProvider].self, from: JSONEncoder().encode(custom)), custom)
     }
 
     // MARK: - Prompt history and worktree mode are kept by the host
 
     /// Sends with no agent installed: the prompt is recorded and the turn
     /// ends at once, so a test can send many in a row.
-    private func send(_ prompt: String, in session: NexusAgentQuickPromptSession) {
-        session.send(prompt, configuration: NexusAgentConfiguration(), agentPath: nil)
+    private func send(_ prompt: String, in session: VitruvianCodeQuickPromptSession) {
+        session.send(prompt, configuration: VitruvianCodeConfiguration(), agentPath: nil)
     }
 
     func testASessionStartsWithWhatTheHostKept() {
@@ -679,7 +679,7 @@ final class EngineHostTests: XCTestCase {
         let host = RecordingHost()
         host.promptHistory = ["oldest", "newest"]
         host.worktreeMode = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
         XCTAssertEqual(session.promptHistory, ["oldest", "newest"])
         XCTAssertEqual(session.historyIndex, -1, "no entry is selected until the user presses up")
@@ -691,7 +691,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
         send("one", in: session)
         send("  two  ", in: session)
@@ -702,7 +702,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(session.historyIndex, -1)
 
         // The next launch.
-        let later = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let later = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
         XCTAssertEqual(later.promptHistory, ["one", "two"])
     }
 
@@ -711,7 +711,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let host = RecordingHost()
         host.promptHistory = ["one", "two"]
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
         let writes = host.promptHistoryWrites
 
         // A repeat of the latest, and a repeat of an older one: neither is
@@ -732,7 +732,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let host = RecordingHost()
         host.promptHistory = (1...20).map { "p\($0)" }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
         send("new", in: session)
         XCTAssertEqual(host.promptHistory.count, 20)
@@ -740,7 +740,7 @@ final class EngineHostTests: XCTestCase {
         // As in the standalone app, the running chat still has the dropped
         // one until it is closed; only what is saved is cut to twenty.
         XCTAssertEqual(session.promptHistory.count, 21)
-        XCTAssertEqual(NexusAgentQuickPromptSession(environment: rig.environment, host: host).promptHistory.count, 20)
+        XCTAssertEqual(VitruvianCodeQuickPromptSession(environment: rig.environment, host: host).promptHistory.count, 20)
 
         send("newer", in: session)
         XCTAssertEqual(host.promptHistory, (3...20).map { "p\($0)" } + ["new", "newer"])
@@ -750,12 +750,12 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
         XCTAssertFalse(session.worktreeMode)
         session.worktreeMode = true
         XCTAssertTrue(host.worktreeMode, "the choice is remembered by the host, not by the session")
-        XCTAssertTrue(NexusAgentQuickPromptSession(environment: rig.environment, host: host).worktreeMode)
+        XCTAssertTrue(VitruvianCodeQuickPromptSession(environment: rig.environment, host: host).worktreeMode)
         session.worktreeMode = false
         XCTAssertFalse(host.worktreeMode)
     }
@@ -771,19 +771,19 @@ final class EngineHostTests: XCTestCase {
         """
 
     func testTheFirstModelOllamaListsIsItsDefault() {
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(fromList: ollamaListing), "llama3.2:latest")
-        XCTAssertEqual(NexusAgentSupport.ollamaFallbackModel, "qwen3")
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(fromList: ollamaListing), "llama3.2:latest")
+        XCTAssertEqual(VitruvianCodeSupport.ollamaFallbackModel, "qwen3")
 
         // Nothing to choose from: the fixed name the standalone app falls back to.
-        let fallback = NexusAgentSupport.ollamaFallbackModel
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(fromList: nil), fallback, "ollama could not be run")
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(fromList: ""), fallback, "it printed nothing")
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(
+        let fallback = VitruvianCodeSupport.ollamaFallbackModel
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(fromList: nil), fallback, "ollama could not be run")
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(fromList: ""), fallback, "it printed nothing")
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(
             fromList: "NAME    ID    SIZE    MODIFIED\n"), fallback, "it has no models")
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(
             fromList: "NAME    ID    SIZE    MODIFIED\n\n\nmistral:7b    f974a74358d6    4.1 GB    1 day ago\n"),
                        "mistral:7b", "blank rows before the first model are passed over")
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(fromList: "NAME\nphi3\tabc\n"), "phi3",
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(fromList: "NAME\nphi3\tabc\n"), "phi3",
                        "a name ends at a tab as well as at a space")
     }
 
@@ -791,26 +791,26 @@ final class EngineHostTests: XCTestCase {
     /// mistake: the first row is dropped whatever it holds, and a first
     /// model row that begins with a space gives up instead of reading on.
     func testTheOllamaListingIsReadAsTheStandaloneReadsIt() {
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(fromList: "llama3.2:latest a80c\nqwen3:8b 500a\n"),
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(fromList: "llama3.2:latest a80c\nqwen3:8b 500a\n"),
                        "qwen3:8b", "with no header row the first model is the one passed over")
-        XCTAssertEqual(NexusAgentSupport.ollamaDefaultModel(fromList: "NAME ID\n llama3.2:latest a80c\nqwen3:8b 500a\n"),
-                       NexusAgentSupport.ollamaFallbackModel,
+        XCTAssertEqual(VitruvianCodeSupport.ollamaDefaultModel(fromList: "NAME ID\n llama3.2:latest a80c\nqwen3:8b 500a\n"),
+                       VitruvianCodeSupport.ollamaFallbackModel,
                        "a row that begins with a space has no name, and the rows after it are not tried")
     }
 
     func testOllamaArgumentsNeverNameAModelCalledDefault() {
-        var configuration = NexusAgentConfiguration(activeProvider: .ollama)
+        var configuration = VitruvianCodeConfiguration(activeProvider: .ollama)
         // The caller looked a model up.
-        XCTAssertEqual(Array(NexusAgentSupport.agentArguments(prompt: "hi", configuration: configuration,
+        XCTAssertEqual(Array(VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: configuration,
                                                               conversationID: nil,
                                                               ollamaDefaultModel: "llama3.2:latest").prefix(5)),
                        ["launch", "claude", "--model", "llama3.2:latest", "--"])
         // The caller did not: the fixed fallback, never the word "default".
-        let plain = NexusAgentSupport.agentArguments(prompt: "hi", configuration: configuration, conversationID: nil)
+        let plain = VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: configuration, conversationID: nil)
         XCTAssertEqual(Array(plain.prefix(5)), ["launch", "claude", "--model", "qwen3", "--"])
         // A model in the settings always wins, spaces around it removed.
         configuration.model = "  gemma3:4b "
-        XCTAssertEqual(Array(NexusAgentSupport.agentArguments(prompt: "hi", configuration: configuration,
+        XCTAssertEqual(Array(VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: configuration,
                                                               conversationID: nil,
                                                               ollamaDefaultModel: "llama3.2:latest").prefix(5)),
                        ["launch", "claude", "--model", "gemma3:4b", "--"])
@@ -821,9 +821,9 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         rig.programOutput = ollamaListing
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         XCTAssertTrue(session.isRunning, "the turn has begun while the model is looked up")
         XCTAssertEqual(session.messages.map(\.role), [.user, .agent])
         await rig.wait { !rig.agentRuns.isEmpty }
@@ -845,9 +845,9 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         rig.programOutput = nil
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         await rig.wait { !rig.agentRuns.isEmpty }
 
         XCTAssertEqual(rig.programRuns.count, 1)
@@ -861,9 +861,9 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         rig.programOutput = ollamaListing
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        session.send("hi", configuration: NexusAgentConfiguration(model: "gemma3:4b", activeProvider: .ollama),
+        session.send("hi", configuration: VitruvianCodeConfiguration(model: "gemma3:4b", activeProvider: .ollama),
                      agentPath: "/fake/ollama")
         // No waiting: with nothing to look up the turn starts at once.
         XCTAssertEqual(rig.agentRuns.count, 1)
@@ -877,10 +877,10 @@ final class EngineHostTests: XCTestCase {
     func testOtherProvidersNeverAskOllama() {
         let rig = Rig()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        for provider in [NexusAgentCLIProvider.antigravity, .claude] {
-            session.send("hi", configuration: NexusAgentConfiguration(activeProvider: provider), agentPath: "/fake/cli")
+        for provider in [VitruvianCodeCLIProvider.antigravity, .claude] {
+            session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: provider), agentPath: "/fake/cli")
             rig.agentExit?(0)
             session.stopTranscriptFollower()
         }
@@ -894,9 +894,9 @@ final class EngineHostTests: XCTestCase {
         rig.programOutput = ollamaListing
         rig.holdsProgram = true
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         await rig.wait { !rig.programRuns.isEmpty }
         XCTAssertTrue(session.isRunning)
         XCTAssertTrue(rig.agentRuns.isEmpty)
@@ -914,7 +914,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(host.finished.count, 1)
 
         // And the chat is usable again.
-        session.send("again", configuration: NexusAgentConfiguration(model: "m", activeProvider: .ollama),
+        session.send("again", configuration: VitruvianCodeConfiguration(model: "m", activeProvider: .ollama),
                      agentPath: "/fake/ollama")
         XCTAssertEqual(rig.agentRuns.count, 1)
         rig.agentExit?(0)
@@ -926,9 +926,9 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         rig.holdsProgram = true
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         await rig.wait { !rig.programRuns.isEmpty }
         session.newChat()
         XCTAssertFalse(session.isRunning)
@@ -943,11 +943,11 @@ final class EngineHostTests: XCTestCase {
 
     /// Where a program named without a folder is looked for, as the
     /// standalone app's own chat looked (removed in step 3c; last shipped in
-    /// nexus-agent 1.19.0): the usual install folders first, then
+    /// nexus-agent-v1.19.0): the usual install folders first, then
     /// the folders on PATH, the first executable one winning.
     func testAProgramIsFoundWhereTheStandaloneLooks() {
         func find(_ name: String, path: String, executables: Set<String>, files: Set<String> = []) -> String? {
-            NexusAgentSupport.executablePath(named: name, pathVariable: path,
+            VitruvianCodeSupport.executablePath(named: name, pathVariable: path,
                                              isExecutable: { executables.contains($0) },
                                              fileExists: { files.contains($0) })
         }
@@ -975,8 +975,8 @@ final class EngineHostTests: XCTestCase {
     // MARK: - A provider's own command is run as written
 
     /// A provider the user added: a command with the prompt and model in it.
-    private func ownProvider(_ template: String = "llm -m {model} \"{prompt}\"") -> NexusAgentCLIProvider {
-        NexusAgentCLIProvider(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-00000000000A")!,
+    private func ownProvider(_ template: String = "llm -m {model} \"{prompt}\"") -> VitruvianCodeCLIProvider {
+        VitruvianCodeCLIProvider(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-00000000000A")!,
                               name: "My LLM", commandTemplate: template, isBuiltIn: false)
     }
 
@@ -991,7 +991,7 @@ final class EngineHostTests: XCTestCase {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
         engine.updateActiveProvider(ownProvider())
         var configuration = engine.configuration
         configuration.model = "m1"
@@ -1040,8 +1040,8 @@ final class EngineHostTests: XCTestCase {
     func testOutputSplitInTheMiddleOfALetterIsStillRead() {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: ownProvider()), agentPath: nil)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: ownProvider()), agentPath: nil)
 
         let bytes = Array("né 🙂".utf8)
         rig.commandOutput?(Data(bytes[..<2]))
@@ -1057,18 +1057,18 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let host = RecordingHost()
         host.planMode = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("add a test", configuration: NexusAgentConfiguration(model: "m1", activeProvider: ownProvider()),
+        session.send("add a test", configuration: VitruvianCodeConfiguration(model: "m1", activeProvider: ownProvider()),
                      agentPath: nil)
         XCTAssertEqual(rig.commandRuns.first?.arguments,
-                       ["-m", "m1", NexusAgentSupport.planModePrompt("add a test")],
+                       ["-m", "m1", VitruvianCodeSupport.planModePrompt("add a test")],
                        "a plain command has no plan flag, so it is told in words, still as one argument")
         XCTAssertEqual(session.messages.first?.text, "add a test", "the bubble shows only what was typed")
         rig.commandOutput?(Data("a plan".utf8))
         rig.commandExit?(0)
 
-        session.send("add a test", configuration: NexusAgentConfiguration(), agentPath: "/fake/agy")
+        session.send("add a test", configuration: VitruvianCodeConfiguration(), agentPath: "/fake/agy")
         XCTAssertEqual(rig.agentRuns.first?.arguments.prefix(2).map { $0 }, ["-p", "add a test"],
                        "agy is told with its flag; its prompt is left alone")
         XCTAssertEqual(rig.agentRuns.first?.arguments.contains("plan"), true)
@@ -1080,9 +1080,9 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: ownProvider()), agentPath: "/fake/agy")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: ownProvider()), agentPath: "/fake/agy")
 
         XCTAssertTrue(rig.commandRuns.isEmpty)
         XCTAssertTrue(rig.agentRuns.isEmpty, "it does not fall back to agy")
@@ -1117,7 +1117,7 @@ final class EngineHostTests: XCTestCase {
             // that is refused, not a lookup that failed.
             rig.executables = ["/usr/bin/rm", "/usr/bin/myrm"]
             let host = RecordingHost()
-            let engine = NexusAgentEngine(environment: rig.environment, host: host)
+            let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
             engine.updateActiveProvider(ownProvider(template))
 
             engine.session.send("rm", configuration: engine.configuration, agentPath: engine.agentPath)
@@ -1137,7 +1137,7 @@ final class EngineHostTests: XCTestCase {
             XCTAssertEqual(notice?.text, "", "\(why): there was no reply")
             XCTAssertEqual(notice?.failureDetail, words, "\(why): the notice carries what the bubble says")
             XCTAssertEqual(announcedOutOfSight(notice),
-                           NexusAgentTurnAnnouncement(playsSound: false,
+                           VitruvianCodeTurnAnnouncement(playsSound: false,
                                                       notificationTitle: "My LLM — Failed",
                                                       notificationBody: words),
                            why)
@@ -1150,8 +1150,8 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
-        let configuration = NexusAgentConfiguration(activeProvider: ownProvider("llm {prompt}"))
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
+        let configuration = VitruvianCodeConfiguration(activeProvider: ownProvider("llm {prompt}"))
 
         session.send("hi", configuration: configuration, agentPath: nil)
         XCTAssertEqual(host.finished.map(\.notice.failed), [true])
@@ -1177,8 +1177,8 @@ final class EngineHostTests: XCTestCase {
             let rig = Rig()
             defer { rig.tearDown() }
             rig.executables = Set(installed)
-            let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
-            session.send("hi", configuration: NexusAgentConfiguration(activeProvider: ownProvider()), agentPath: nil)
+            let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
+            session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: ownProvider()), agentPath: nil)
             XCTAssertEqual(rig.commandRuns.first?.path, found)
             rig.commandExit?(0)
         }
@@ -1187,8 +1187,8 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         rig.files["/Applications/My Tool/run"] = ""
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
-        session.send("hi", configuration: NexusAgentConfiguration(
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        session.send("hi", configuration: VitruvianCodeConfiguration(
             activeProvider: ownProvider("\"/Applications/My Tool/run\" {prompt}")), agentPath: nil)
         XCTAssertEqual(rig.commandRuns.first?.path, "/Applications/My Tool/run")
         XCTAssertEqual(rig.commandRuns.first?.arguments, ["hi"])
@@ -1198,9 +1198,9 @@ final class EngineHostTests: XCTestCase {
     func testAnEmptyTemplateIsNotRun() {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: ownProvider("  ")), agentPath: "/fake/agy")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: ownProvider("  ")), agentPath: "/fake/agy")
 
         XCTAssertTrue(rig.commandRuns.isEmpty)
         XCTAssertTrue(rig.agentRuns.isEmpty)
@@ -1218,10 +1218,10 @@ final class EngineHostTests: XCTestCase {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
         rig.executables.insert("/usr/bin/rm")
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
         for template in ["{prompt} -rf x", "my{prompt} x"] {
-            session.send("rm", configuration: NexusAgentConfiguration(activeProvider: ownProvider(template)),
+            session.send("rm", configuration: VitruvianCodeConfiguration(activeProvider: ownProvider(template)),
                          agentPath: "/fake/agy")
             XCTAssertTrue(rig.commandRuns.isEmpty, "nothing is launched for \(template)")
             XCTAssertTrue(rig.agentRuns.isEmpty)
@@ -1233,7 +1233,7 @@ final class EngineHostTests: XCTestCase {
         }
 
         // The page, too, says there is no program to find.
-        let engine = NexusAgentEngine(environment: rig.environment, host: RecordingHost())
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: RecordingHost())
         engine.updateActiveProvider(ownProvider("llm {prompt}"))
         XCTAssertEqual(engine.agentPath, "/opt/homebrew/bin/llm")
         engine.updateActiveProvider(ownProvider("{prompt} x"))
@@ -1242,8 +1242,8 @@ final class EngineHostTests: XCTestCase {
         // A model in the program's name is still the user's own setting.
         let rigWithModelProgram = rigWithCommand("/opt/homebrew/bin/m1")
         defer { rigWithModelProgram.tearDown() }
-        let modelSession = NexusAgentQuickPromptSession(environment: rigWithModelProgram.environment, host: RecordingHost())
-        modelSession.send("hi", configuration: NexusAgentConfiguration(model: "m1",
+        let modelSession = VitruvianCodeQuickPromptSession(environment: rigWithModelProgram.environment, host: RecordingHost())
+        modelSession.send("hi", configuration: VitruvianCodeConfiguration(model: "m1",
                                                                          activeProvider: ownProvider("{model} run {prompt}")),
                           agentPath: nil)
         XCTAssertEqual(rigWithModelProgram.commandRuns.first?.path, "/opt/homebrew/bin/m1")
@@ -1255,8 +1255,8 @@ final class EngineHostTests: XCTestCase {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
-        let configuration = NexusAgentConfiguration(activeProvider: ownProvider())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
+        let configuration = VitruvianCodeConfiguration(activeProvider: ownProvider())
 
         // It complained and printed no answer: the complaint is the message.
         session.send("one", configuration: configuration, agentPath: nil)
@@ -1273,7 +1273,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(host.finished.last?.notice.failureDetail, "Error: model 'm' not found",
                        "the notice carries the words of the error bubble")
         XCTAssertEqual(announcedOutOfSight(host.finished.last?.notice),
-                       NexusAgentTurnAnnouncement(playsSound: false,
+                       VitruvianCodeTurnAnnouncement(playsSound: false,
                                                   notificationTitle: "Agent — Failed",
                                                   notificationBody: "Error: model 'm' not found"))
 
@@ -1318,9 +1318,9 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         rig.commandCannotStart = true
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: ownProvider()), agentPath: nil)
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: ownProvider()), agentPath: nil)
 
         XCTAssertFalse(session.isRunning)
         XCTAssertEqual(session.messages.count, 2)
@@ -1340,8 +1340,8 @@ final class EngineHostTests: XCTestCase {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
-        let configuration = NexusAgentConfiguration(activeProvider: ownProvider())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
+        let configuration = VitruvianCodeConfiguration(activeProvider: ownProvider())
 
         session.send("hi", configuration: configuration, agentPath: nil)
         session.stop()
@@ -1356,7 +1356,7 @@ final class EngineHostTests: XCTestCase {
         // The user stopped it: nothing failed that has words, and a user
         // who cannot see the chat is not told "Failed".
         XCTAssertNil(host.finished.first?.notice.failureDetail)
-        XCTAssertEqual(announcedOutOfSight(host.finished.first?.notice), NexusAgentTurnAnnouncement(playsSound: false))
+        XCTAssertEqual(announcedOutOfSight(host.finished.first?.notice), VitruvianCodeTurnAnnouncement(playsSound: false))
 
         // What had arrived before the stop stays.
         session.send("again", configuration: configuration, agentPath: nil)
@@ -1366,7 +1366,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(session.messages.last?.text, "so far")
         XCTAssertEqual(host.finished.count, 2)
         XCTAssertEqual(announcedOutOfSight(host.finished.last?.notice),
-                       NexusAgentTurnAnnouncement(playsSound: false, notificationTitle: "Agent — Done",
+                       VitruvianCodeTurnAnnouncement(playsSound: false, notificationTitle: "Agent — Done",
                                                   notificationBody: "so far"))
 
         // A turn replaced by a new chat is not heard from again.
@@ -1384,11 +1384,11 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         rig.programOutput = ollamaListing
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
         // No model is set, so Ollama is asked for one exactly as the
         // built-in Ollama provider asks: the routing and the lookup agree.
-        session.send("hi", configuration: NexusAgentConfiguration(
+        session.send("hi", configuration: VitruvianCodeConfiguration(
             activeProvider: ownProvider("ollama run {model} {prompt}")), agentPath: "/fake/ollama")
         await rig.wait { !rig.agentRuns.isEmpty }
 
@@ -1404,15 +1404,15 @@ final class EngineHostTests: XCTestCase {
     func testAnOwnProviderThatStartsWithClaudeIsRunAsClaude() {
         let rig = Rig()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        session.send("hi", configuration: NexusAgentConfiguration(
+        session.send("hi", configuration: VitruvianCodeConfiguration(
             activeProvider: ownProvider("claude --print {prompt}")), agentPath: "/fake/claude")
 
         XCTAssertTrue(rig.commandRuns.isEmpty)
         XCTAssertTrue(rig.programRuns.isEmpty)
-        XCTAssertEqual(rig.agentRuns.first?.arguments, NexusAgentSupport.agentArguments(
-            prompt: "hi", configuration: NexusAgentConfiguration(activeProvider: .claude), conversationID: nil))
+        XCTAssertEqual(rig.agentRuns.first?.arguments, VitruvianCodeSupport.agentArguments(
+            prompt: "hi", configuration: VitruvianCodeConfiguration(activeProvider: .claude), conversationID: nil))
         rig.agentExit?(0)
         session.stopTranscriptFollower()
     }
@@ -1420,11 +1420,11 @@ final class EngineHostTests: XCTestCase {
     func testAnEditedBuiltInProviderStillRunsItsOwnWay() {
         let rig = rigWithCommand()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
-        var agy = NexusAgentCLIProvider.antigravity
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        var agy = VitruvianCodeCLIProvider.antigravity
         agy.commandTemplate = "llm {prompt}"
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: agy), agentPath: "/fake/agy")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: agy), agentPath: "/fake/agy")
 
         XCTAssertTrue(rig.commandRuns.isEmpty, "the edited template is not run, as in the standalone")
         XCTAssertEqual(rig.agentRuns.first?.path, "/fake/agy")
@@ -1439,7 +1439,7 @@ final class EngineHostTests: XCTestCase {
         rig.executables = ["/usr/local/bin/llm", "/opt/homebrew/bin/ollama", "/Users/rig/.local/bin/claude"]
         let host = RecordingHost()
         host.savedProviders = [ownProvider()]
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.updateActiveProvider(ownProvider())
         XCTAssertEqual(engine.agentPath, "/usr/local/bin/llm", "an own command: the first word of its template")
@@ -1462,7 +1462,7 @@ final class EngineHostTests: XCTestCase {
     /// if none is there is the standalone's own lookup tried.
     func testClaudeAndOllamaAreAlsoLookedForWhereTheStandaloneLooks() {
         func find(_ name: String, path: String = "", _ executables: Set<String>) -> String? {
-            NexusAgentSupport.locateChatProgram(named: name, environment: ["PATH": path], home: "/Users/rig",
+            VitruvianCodeSupport.locateChatProgram(named: name, environment: ["PATH": path], home: "/Users/rig",
                                                 isExecutable: { executables.contains($0) }, fileExists: { _ in false })
         }
         // Only in a folder the standalone adds: found now.
@@ -1487,7 +1487,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         rig.executables = ["/usr/bin/claude", "/opt/homebrew/sbin/ollama"]
-        let engine = NexusAgentEngine(environment: rig.environment, host: RecordingHost())
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: RecordingHost())
 
         engine.updateActiveProvider(.claude)
         XCTAssertEqual(engine.agentPath, "/usr/bin/claude")
@@ -1513,7 +1513,7 @@ final class EngineHostTests: XCTestCase {
     func testAProgramThatRunsTooLongIsEndedAndGivesNothing() async throws {
         let seconds = uniqueSleepSeconds(5, test: 1)
         let started = Date()
-        let output = await NexusAgentEngine.runProgram(named: "/bin/sleep", arguments: [seconds], timeLimit: 0.3)
+        let output = await VitruvianCodeEngine.runProgram(named: "/bin/sleep", arguments: [seconds], timeLimit: 0.3)
         XCTAssertNil(output)
         XCTAssertLessThan(Date().timeIntervalSince(started), 3, "it did not wait for the sleep to finish")
 
@@ -1527,9 +1527,9 @@ final class EngineHostTests: XCTestCase {
     }
 
     func testAProgramThatFinishesInTimeGivesItsOutput() async {
-        let output = await NexusAgentEngine.runProgram(named: "/bin/echo", arguments: ["hi"], timeLimit: 5)
+        let output = await VitruvianCodeEngine.runProgram(named: "/bin/echo", arguments: ["hi"], timeLimit: 5)
         XCTAssertEqual(output, "hi\n")
-        let defaulted = await NexusAgentEngine.runProgram(named: "/bin/echo", arguments: ["hi"])
+        let defaulted = await VitruvianCodeEngine.runProgram(named: "/bin/echo", arguments: ["hi"])
         XCTAssertEqual(defaulted, "hi\n", "with the usual limit")
     }
 
@@ -1569,7 +1569,7 @@ final class EngineHostTests: XCTestCase {
     func testAProgramThatIgnoresTheStopStillGivesNothingAtTheLimitAndIsKilled() async {
         let marker = "sleep " + uniqueSleepSeconds(30, test: 2)
         let started = Date()
-        let output = await NexusAgentEngine.runProgram(
+        let output = await VitruvianCodeEngine.runProgram(
             named: "/bin/sh", arguments: ["-c", "trap '' TERM; exec \(marker)"], timeLimit: 0.3)
         XCTAssertNil(output)
         XCTAssertLessThan(Date().timeIntervalSince(started), 2, "the caller did not wait for the program")
@@ -1586,7 +1586,7 @@ final class EngineHostTests: XCTestCase {
         defer { _ = try? Process.run(URL(fileURLWithPath: "/usr/bin/pkill"), arguments: ["-f", marker]) }
         let started = Date()
         // The shell ends at once; the sleep it started holds the output pipe.
-        let output = await NexusAgentEngine.runProgram(
+        let output = await VitruvianCodeEngine.runProgram(
             named: "/bin/sh", arguments: ["-c", "\(marker) & exit 0"], timeLimit: 0.3)
         XCTAssertNil(output)
         XCTAssertLessThan(Date().timeIntervalSince(started), 2)
@@ -1602,7 +1602,7 @@ final class EngineHostTests: XCTestCase {
         let hostile = "a  b; touch '\(marker)' $(touch '\(marker)') `touch '\(marker)'` \"q\" $HOME *"
         let heard = Heard()
 
-        _ = try? NexusAgentEngine.Environment.live.launchCommand(
+        _ = try? VitruvianCodeEngine.Environment.live.launchCommand(
             "/bin/echo", [hostile, "second"], rig.home, ["PATH": "/usr/bin:/bin"],
             { heard.output.append($0) }, { heard.errors.append($0) }, { heard.status = $0 })
         await rig.wait { heard.status != nil }
@@ -1619,7 +1619,7 @@ final class EngineHostTests: XCTestCase {
         let heard = Heard()
 
         // `ls` of a file that is not there: nothing printed, a complaint, a bad exit.
-        _ = try? NexusAgentEngine.Environment.live.launchCommand(
+        _ = try? VitruvianCodeEngine.Environment.live.launchCommand(
             "/bin/ls", [rig.home + "/not-there"], rig.home, ["PATH": "/usr/bin:/bin"],
             { heard.output.append($0) }, { heard.errors.append($0) }, { heard.status = $0 })
         await rig.wait { heard.status != nil }
@@ -1640,7 +1640,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         let echoLines = "while IFS= read -r line; do echo \"got:$line\"; done; echo eof"
         let heard = Heard()
-        let running = try NexusAgentEngine.Environment.live.launchAgent(
+        let running = try VitruvianCodeEngine.Environment.live.launchAgent(
             "/bin/sh", ["-c", echoLines, "sh", "--input-format", "stream-json"], rig.home, ["PATH": "/usr/bin:/bin"],
             { heard.output.append($0) }, { heard.status = $0 })
         running.sendInput?(Data("{\"type\":\"user\"}\n".utf8))
@@ -1653,7 +1653,7 @@ final class EngineHostTests: XCTestCase {
         running.sendInput?(Data("late\n".utf8))  // after the close and the exit: dropped, no SIGPIPE
 
         let other = Heard()
-        _ = try NexusAgentEngine.Environment.live.launchAgent(
+        _ = try VitruvianCodeEngine.Environment.live.launchAgent(
             "/bin/sh", ["-c", echoLines], rig.home, ["PATH": "/usr/bin:/bin"],
             { other.output.append($0) }, { other.status = $0 })
         await rig.wait { other.status != nil }
@@ -1670,8 +1670,8 @@ final class EngineHostTests: XCTestCase {
 
     // MARK: - Deleting agy conversations
 
-    private func conversation(_ id: String) -> NexusAgentSessionSummary {
-        NexusAgentSessionSummary(id: id, title: "T", steps: 1, modified: nil)
+    private func conversation(_ id: String) -> VitruvianCodeSessionSummary {
+        VitruvianCodeSessionSummary(id: id, title: "T", steps: 1, modified: nil)
     }
 
     /// A rig with agy's conversation index in the desktop app's folder
@@ -1689,11 +1689,11 @@ final class EngineHostTests: XCTestCase {
     func testDeletingAConversationRemovesItsRowAndItsThreeFiles() {
         let rig = rigWithIndex(conversations: ["abc-1", "abc-2"])
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let data = rig.home + "/.gemini/antigravity"
         let listedBefore = rig.listedHidden.count
 
-        XCTAssertTrue(session.delete(conversation("abc-1"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("abc-1"), configuration: VitruvianCodeConfiguration()))
 
         XCTAssertEqual(rig.sqliteRuns.count, 1)
         XCTAssertEqual(rig.sqliteRuns.first?.database, data + "/conversation_summaries.db")
@@ -1711,32 +1711,32 @@ final class EngineHostTests: XCTestCase {
     func testAnIdCannotChangeTheStatement() {
         let rig = rigWithIndex()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        XCTAssertTrue(session.delete(conversation("it's"), configuration: NexusAgentConfiguration()))
-        XCTAssertTrue(session.delete(conversation("x' OR '1'='1"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("it's"), configuration: VitruvianCodeConfiguration()))
+        XCTAssertTrue(session.delete(conversation("x' OR '1'='1"), configuration: VitruvianCodeConfiguration()))
         XCTAssertTrue(session.delete(conversation("x'; DROP TABLE conversation_summaries; --"),
-                                     configuration: NexusAgentConfiguration()))
+                                     configuration: VitruvianCodeConfiguration()))
 
         XCTAssertEqual(rig.sqliteRuns.map(\.sql), [
             "DELETE FROM conversation_summaries WHERE conversation_id = 'it''s';",
             "DELETE FROM conversation_summaries WHERE conversation_id = 'x'' OR ''1''=''1';",
             "DELETE FROM conversation_summaries WHERE conversation_id = 'x''; DROP TABLE conversation_summaries; --';",
         ], "every quote in the id is doubled, so the id stays inside its quotes")
-        XCTAssertEqual(NexusAgentSessionSummary.sqlQuoted("plain"), "'plain'")
-        XCTAssertEqual(NexusAgentSessionSummary.sqlQuoted("''"), "''''''")
+        XCTAssertEqual(VitruvianCodeSessionSummary.sqlQuoted("plain"), "'plain'")
+        XCTAssertEqual(VitruvianCodeSessionSummary.sqlQuoted("''"), "''''''")
     }
 
     func testAnIdThatIsAPathIsRefused() {
         let rig = rigWithIndex()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
         // The id names files to remove, so one that would leave the
         // conversations folder is not acted on at all. (The standalone has
         // no such check; ids only ever reach it from agy's own index.)
         for id in ["../conversation_summaries", "../../../.ssh/id_ed25519", "a/b", "/etc/passwd", "", ".", ".."] {
-            XCTAssertFalse(session.delete(conversation(id), configuration: NexusAgentConfiguration()), id)
+            XCTAssertFalse(session.delete(conversation(id), configuration: VitruvianCodeConfiguration()), id)
         }
         XCTAssertTrue(rig.sqliteRuns.isEmpty)
         XCTAssertTrue(rig.removed.isEmpty)
@@ -1747,19 +1747,19 @@ final class EngineHostTests: XCTestCase {
     func testAnIdWithAControlCharacterIsRefused() {
         let rig = rigWithIndex()
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
         let ids = ["abc\u{0}def", "\u{0}", "abc\n", "abc\ndef", "abc\r", "\tabc", "abc\tdef", "abc\u{1B}[0m",
                    "abc\u{7F}", "abc\u{85}"]
         for id in ids {
-            XCTAssertFalse(NexusAgentSessionSummary.isPlainName(id), id.debugDescription)
-            XCTAssertFalse(session.delete(conversation(id), configuration: NexusAgentConfiguration()), id.debugDescription)
+            XCTAssertFalse(VitruvianCodeSessionSummary.isPlainName(id), id.debugDescription)
+            XCTAssertFalse(session.delete(conversation(id), configuration: VitruvianCodeConfiguration()), id.debugDescription)
         }
         XCTAssertTrue(rig.sqliteRuns.isEmpty, "no SQL was run")
         XCTAssertTrue(rig.removed.isEmpty, "and nothing was deleted")
         // Ordinary ids, spaces and non-Latin letters included, are still fine.
         for id in ["abc-1", "a b", "é", "会話-1", "it's"] {
-            XCTAssertTrue(NexusAgentSessionSummary.isPlainName(id), id)
+            XCTAssertTrue(VitruvianCodeSessionSummary.isPlainName(id), id)
         }
     }
 
@@ -1768,7 +1768,7 @@ final class EngineHostTests: XCTestCase {
     func testDeletingTheOpenConversationStartsANewChat() {
         let rig = rigWithIndex(conversations: ["open-1", "other-1"])
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         session.resume(conversation("open-1"))
         defer { session.stopTranscriptFollower() }
         XCTAssertEqual(session.conversationID, "open-1")
@@ -1776,19 +1776,19 @@ final class EngineHostTests: XCTestCase {
         XCTAssertFalse(messages.isEmpty)
 
         // Another conversation: the open chat is left as it is.
-        XCTAssertTrue(session.delete(conversation("other-1"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("other-1"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(session.conversationID, "open-1")
         XCTAssertEqual(session.messages, messages)
         XCTAssertEqual(session.mode, .chat)
 
         // A delete that did not happen leaves it alone too.
         rig.sqliteFails = true
-        XCTAssertFalse(session.delete(conversation("open-1"), configuration: NexusAgentConfiguration()))
+        XCTAssertFalse(session.delete(conversation("open-1"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(session.conversationID, "open-1")
         rig.sqliteFails = false
 
         // The open one: the chat is new, so the next prompt cannot resume a conversation that is gone.
-        XCTAssertTrue(session.delete(conversation("open-1"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("open-1"), configuration: VitruvianCodeConfiguration()))
         XCTAssertNil(session.conversationID)
         XCTAssertTrue(session.messages.isEmpty)
         XCTAssertFalse(session.isResumed)
@@ -1796,8 +1796,8 @@ final class EngineHostTests: XCTestCase {
     }
 
     /// Clears a folder's conversations and waits until that is over.
-    private func clearAll(_ session: NexusAgentQuickPromptSession,
-                          in configuration: NexusAgentConfiguration) async -> Int {
+    private func clearAll(_ session: VitruvianCodeQuickPromptSession,
+                          in configuration: VitruvianCodeConfiguration) async -> Int {
         await session.deleteAll(in: configuration).value
     }
 
@@ -1807,19 +1807,19 @@ final class EngineHostTests: XCTestCase {
         rig.sqliteRows = """
         [{"conversation_id":"open-1","workspace_uris":"[]"},{"conversation_id":"other-1","workspace_uris":"[]"}]
         """
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         defer { session.stopTranscriptFollower() }
 
         // Open, but in no list: untouched.
         session.resume(conversation("elsewhere"))
-        let others = await clearAll(session, in: NexusAgentConfiguration())
+        let others = await clearAll(session, in: VitruvianCodeConfiguration())
         XCTAssertEqual(others, 2)
         XCTAssertEqual(session.conversationID, "elsewhere")
         XCTAssertFalse(session.messages.isEmpty)
 
         // Open and deleted with the rest.
         session.resume(conversation("open-1"))
-        let withTheOpenOne = await clearAll(session, in: NexusAgentConfiguration())
+        let withTheOpenOne = await clearAll(session, in: VitruvianCodeConfiguration())
         XCTAssertEqual(withTheOpenOne, 2)
         XCTAssertNil(session.conversationID)
         XCTAssertTrue(session.messages.isEmpty)
@@ -1827,7 +1827,7 @@ final class EngineHostTests: XCTestCase {
         // Open and in the list, but nothing could be deleted: it stays.
         session.resume(conversation("open-1"))
         rig.sqliteFails = true
-        let none = await clearAll(session, in: NexusAgentConfiguration())
+        let none = await clearAll(session, in: VitruvianCodeConfiguration())
         XCTAssertEqual(none, 0)
         XCTAssertEqual(session.conversationID, "open-1")
         XCTAssertFalse(session.messages.isEmpty)
@@ -1837,11 +1837,11 @@ final class EngineHostTests: XCTestCase {
     func testOnlyAgyConversationsCanBeDeleted() async {
         let rig = rigWithIndex(conversations: ["abc-1"])
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
-        let own = NexusAgentCLIProvider(id: UUID(), name: "Mine", commandTemplate: "agy -p {prompt}", isBuiltIn: false)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let own = VitruvianCodeCLIProvider(id: UUID(), name: "Mine", commandTemplate: "agy -p {prompt}", isBuiltIn: false)
 
-        for provider in [NexusAgentCLIProvider.claude, .ollama, own] {
-            let configuration = NexusAgentConfiguration(activeProvider: provider)
+        for provider in [VitruvianCodeCLIProvider.claude, .ollama, own] {
+            let configuration = VitruvianCodeConfiguration(activeProvider: provider)
             XCTAssertFalse(session.delete(conversation("abc-1"), configuration: configuration), provider.name)
             let cleared = await clearAll(session, in: configuration)
             XCTAssertEqual(cleared, 0, provider.name)
@@ -1854,9 +1854,9 @@ final class EngineHostTests: XCTestCase {
         // No index at all.
         let bare = Rig()
         defer { bare.tearDown() }
-        let onBare = NexusAgentQuickPromptSession(environment: bare.environment, host: RecordingHost())
-        XCTAssertFalse(onBare.delete(conversation("abc-1"), configuration: NexusAgentConfiguration()))
-        let cleared = await clearAll(onBare, in: NexusAgentConfiguration())
+        let onBare = VitruvianCodeQuickPromptSession(environment: bare.environment, host: RecordingHost())
+        XCTAssertFalse(onBare.delete(conversation("abc-1"), configuration: VitruvianCodeConfiguration()))
+        let cleared = await clearAll(onBare, in: VitruvianCodeConfiguration())
         XCTAssertEqual(cleared, 0)
         XCTAssertTrue(bare.sqliteRuns.isEmpty, "SQLite is not run on a file that is not there: it would create one")
         XCTAssertTrue(bare.removed.isEmpty)
@@ -1865,8 +1865,8 @@ final class EngineHostTests: XCTestCase {
         let rig = rigWithIndex(conversations: ["abc-1"])
         defer { rig.tearDown() }
         rig.sqliteFails = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
-        XCTAssertFalse(session.delete(conversation("abc-1"), configuration: NexusAgentConfiguration()))
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        XCTAssertFalse(session.delete(conversation("abc-1"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(rig.sqliteRuns.count, 1)
         XCTAssertTrue(rig.removed.isEmpty)
     }
@@ -1876,16 +1876,16 @@ final class EngineHostTests: XCTestCase {
         // and the files are looked for beside it.
         let rig = rigWithIndex(in: ".gemini/antigravity-cli", conversations: ["abc-1"])
         defer { rig.tearDown() }
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let data = rig.home + "/.gemini/antigravity-cli"
 
-        XCTAssertTrue(session.delete(conversation("abc-1"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("abc-1"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(rig.sqliteRuns.first?.database, data + "/conversation_summaries.db")
         XCTAssertEqual(rig.removed.first, data + "/conversations/abc-1.db")
 
         // Both have one: the desktop app's comes first, as it does for the list.
         rig.files[rig.home + "/.gemini/antigravity/conversation_summaries.db"] = ""
-        XCTAssertTrue(session.delete(conversation("abc-2"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("abc-2"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(rig.sqliteRuns.last?.database, rig.home + "/.gemini/antigravity/conversation_summaries.db")
         XCTAssertEqual(rig.removed.last, rig.home + "/.gemini/antigravity/conversations/abc-2.db-shm")
     }
@@ -1913,17 +1913,17 @@ final class EngineHostTests: XCTestCase {
          {"conversation_id":"","workspace_uris":"[]"},
          {"conversation_id":"it's","workspace_uris":"[\\"file:///Users/rig/work\\"]"}]
         """
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let listedBefore = rig.listedHidden.count
 
-        let count = await clearAll(session, in: NexusAgentConfiguration(workingDirectory: "~/work/"))
+        let count = await clearAll(session, in: VitruvianCodeConfiguration(workingDirectory: "~/work/"))
 
         XCTAssertEqual(rig.sqliteRuns.first?.sql, clearAllQuery, "the standalone's own query")
         XCTAssertEqual(rig.sqliteRuns.first?.readsRows, true)
         let deleted = ["here-1", "both", "nowhere", "unreadable", "it's"]
         XCTAssertEqual(count, deleted.count)
         XCTAssertEqual(rig.sqliteRuns.dropFirst().map(\.sql), deleted.map {
-            "DELETE FROM conversation_summaries WHERE conversation_id = \(NexusAgentSessionSummary.sqlQuoted($0));"
+            "DELETE FROM conversation_summaries WHERE conversation_id = \(VitruvianCodeSessionSummary.sqlQuoted($0));"
         }, "the folder's own, and those with no folder recorded; not another folder's, not one inside or above it")
         XCTAssertTrue(rig.sqliteRuns.dropFirst().allSatisfy { !$0.readsRows })
         XCTAssertEqual(rig.removed.count, deleted.count * 3)
@@ -1940,10 +1940,10 @@ final class EngineHostTests: XCTestCase {
          {"conversation_id":"c-3","workspace_uris":"[]"},{"conversation_id":"c-4","workspace_uris":"[]"}]
         """
         rig.sqliteFailsWhenSQLHas = "'c-2'"
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let data = rig.home + "/.gemini/antigravity/conversations/"
 
-        let count = await clearAll(session, in: NexusAgentConfiguration())
+        let count = await clearAll(session, in: VitruvianCodeConfiguration())
 
         XCTAssertEqual(count, 1, "only the one before the failure is counted")
         XCTAssertEqual(rig.sqliteRuns.dropFirst().map(\.sql), [
@@ -1963,18 +1963,18 @@ final class EngineHostTests: XCTestCase {
         [{"conversation_id":"home-1","workspace_uris":"[\\"file:///Users/rig\\"]"},
          {"conversation_id":"work-1","workspace_uris":"[\\"file:///Users/rig/work\\"]"}]
         """
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
         // The drawer lists every folder's conversations when none is set;
         // "all" still means one folder's, as it does in the standalone.
-        let atHome = await clearAll(session, in: NexusAgentConfiguration())
+        let atHome = await clearAll(session, in: VitruvianCodeConfiguration())
         XCTAssertEqual(atHome, 1)
         XCTAssertEqual(rig.sqliteRuns.last?.sql,
                        "DELETE FROM conversation_summaries WHERE conversation_id = 'home-1';")
 
         // A folder that is set but gone is still that folder, not home.
         rig.sqliteRuns = []
-        let atWork = await clearAll(session, in: NexusAgentConfiguration(workingDirectory: "/Users/rig/work"))
+        let atWork = await clearAll(session, in: VitruvianCodeConfiguration(workingDirectory: "/Users/rig/work"))
         XCTAssertEqual(atWork, 1)
         XCTAssertEqual(rig.sqliteRuns.last?.sql,
                        "DELETE FROM conversation_summaries WHERE conversation_id = 'work-1';")
@@ -2003,12 +2003,12 @@ final class EngineHostTests: XCTestCase {
         let rig = fourConversations()
         defer { rig.tearDown() }
         rig.holdsSqlite = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let listedBefore = rig.listedHidden.count
         let data = rig.home + "/.gemini/antigravity/conversations/"
         XCTAssertFalse(session.isClearingSessions)
 
-        let clearing = session.deleteAll(in: NexusAgentConfiguration())
+        let clearing = session.deleteAll(in: VitruvianCodeConfiguration())
 
         // Back with the caller, on the main actor, and SQLite has not even been asked.
         XCTAssertTrue(session.isClearingSessions, "the session says a clear is under way")
@@ -2048,12 +2048,12 @@ final class EngineHostTests: XCTestCase {
         let rig = fourConversations()
         defer { rig.tearDown() }
         rig.holdsSqlite = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let listedBefore = rig.listedHidden.count
 
-        let first = session.deleteAll(in: NexusAgentConfiguration())
+        let first = session.deleteAll(in: VitruvianCodeConfiguration())
         await rig.wait { rig.sqliteRuns.count == 1 }
-        let second = session.deleteAll(in: NexusAgentConfiguration())
+        let second = session.deleteAll(in: VitruvianCodeConfiguration())
         let secondCount = await second.value
         await rig.settle()
 
@@ -2070,7 +2070,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertFalse(session.isClearingSessions)
 
         // Once it is over, Clear All can be asked for again.
-        let third = await clearAll(session, in: NexusAgentConfiguration())
+        let third = await clearAll(session, in: VitruvianCodeConfiguration())
         XCTAssertEqual(third, 4)
         XCTAssertEqual(rig.listedHidden.count, listedBefore + 2)
     }
@@ -2079,10 +2079,10 @@ final class EngineHostTests: XCTestCase {
         let rig = fourConversations()
         defer { rig.tearDown() }
         rig.sqliteFailsWhenSQLHas = "'c-2'"
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         let data = rig.home + "/.gemini/antigravity/conversations/"
 
-        let count = await clearAll(session, in: NexusAgentConfiguration())
+        let count = await clearAll(session, in: VitruvianCodeConfiguration())
 
         XCTAssertEqual(count, 1, "only the one before the failure is counted")
         XCTAssertEqual(rig.sqliteRuns.dropFirst().map(\.sql), [deleteOf("c-1"), deleteOf("c-2")],
@@ -2095,7 +2095,7 @@ final class EngineHostTests: XCTestCase {
         // A query that fails deletes nothing, and is over as well.
         rig.sqliteFailsWhenSQLHas = nil
         rig.sqliteFails = true
-        let nothing = await clearAll(session, in: NexusAgentConfiguration())
+        let nothing = await clearAll(session, in: VitruvianCodeConfiguration())
         XCTAssertEqual(nothing, 0)
         XCTAssertFalse(session.isClearingSessions)
     }
@@ -2107,7 +2107,7 @@ final class EngineHostTests: XCTestCase {
             #"{"type":"PLANNER_RESPONSE","tool_calls":[{"name":"invoke_subagent","args":{"Prompt":"\"Watch CI\"","Role":"\"CI watch\"","TypeName":"\"self\""}}]}"#,
         ])
         rig.writeAgyTranscript("quiet", lines: [#"{"type":"USER_INPUT","content":"hello"}"#])
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         defer { session.stopTranscriptFollower() }
 
         session.resume(conversation("busy"))
@@ -2131,11 +2131,11 @@ final class EngineHostTests: XCTestCase {
         let rig = fourConversations()
         defer { rig.tearDown() }
         rig.holdsSqlite = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
         defer { session.stopTranscriptFollower() }
         session.resume(conversation("c-3"))
 
-        let clearing = session.deleteAll(in: NexusAgentConfiguration())
+        let clearing = session.deleteAll(in: VitruvianCodeConfiguration())
         await rig.wait { rig.sqliteRuns.count == 1 }
         XCTAssertEqual(session.conversationID, "c-3", "the open chat is left alone while the clear runs")
         XCTAssertFalse(session.messages.isEmpty)
@@ -2156,9 +2156,9 @@ final class EngineHostTests: XCTestCase {
         let rig = fourConversations()
         defer { rig.tearDown() }
         rig.hasOffMainSqlite = false
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        let clearing = session.deleteAll(in: NexusAgentConfiguration())
+        let clearing = session.deleteAll(in: VitruvianCodeConfiguration())
         XCTAssertTrue(rig.sqliteRuns.isEmpty, "even so, the call comes back first")
         let count = await clearing.value
 
@@ -2171,7 +2171,7 @@ final class EngineHostTests: XCTestCase {
     /// one two-second wait after another. The one both apps run with must
     /// have it.
     func testTheRealEnvironmentHasTheOffMainEntry() {
-        XCTAssertNotNil(NexusAgentEngine.Environment.live.runSqliteOffMain,
+        XCTAssertNotNil(VitruvianCodeEngine.Environment.live.runSqliteOffMain,
                         "without it Clear All freezes the app while it runs")
     }
 
@@ -2181,7 +2181,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig(realHome: true)
         defer { rig.tearDown() }
         let index = try realIndex(rig)
-        let entry = try XCTUnwrap(NexusAgentEngine.Environment.live.runSqliteOffMain,
+        let entry = try XCTUnwrap(VitruvianCodeEngine.Environment.live.runSqliteOffMain,
                                   "the real environment has the off-main entry")
 
         let rows = await entry(index.database, "SELECT conversation_id FROM conversation_summaries;", true)
@@ -2190,7 +2190,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertTrue(text.contains("busy-1"), text)
         let missing = await entry(rig.home + "/no-such-folder/x.db", "SELECT 1;", true)
         XCTAssertNil(missing, "a statement that fails gives nil, as the plain entry does")
-        let onMain = await NexusAgentEngine.offMainThread { Thread.isMainThread }
+        let onMain = await VitruvianCodeEngine.offMainThread { Thread.isMainThread }
         XCTAssertFalse(onMain, "the work it is given does not run on the main thread")
     }
 
@@ -2240,8 +2240,8 @@ final class EngineHostTests: XCTestCase {
         var setup = "CREATE TABLE conversation_summaries (conversation_id TEXT PRIMARY KEY, title TEXT, preview TEXT, "
             + "step_count INTEGER, last_modified_time TEXT, workspace_uris TEXT, nesting_depth INTEGER, killed INTEGER);"
         for (index, row) in rows.enumerated() {
-            setup += "INSERT INTO conversation_summaries VALUES (\(NexusAgentSessionSummary.sqlQuoted(row.0)), 'T', 'P', 1, "
-                + "'2026-10-0\(index + 1)T10:00:00Z', \(NexusAgentSessionSummary.sqlQuoted(row.1)), \(row.2), \(row.3));"
+            setup += "INSERT INTO conversation_summaries VALUES (\(VitruvianCodeSessionSummary.sqlQuoted(row.0)), 'T', 'P', 1, "
+                + "'2026-10-0\(index + 1)T10:00:00Z', \(VitruvianCodeSessionSummary.sqlQuoted(row.1)), \(row.2), \(row.3));"
             for suffix in [".db", ".db-wal", ".db-shm"] {
                 files.createFile(atPath: conversations + "/" + row.0 + suffix, contents: Data("x".utf8))
             }
@@ -2265,25 +2265,25 @@ final class EngineHostTests: XCTestCase {
 
         // The real SQLite and file calls, in the throwaway home. The real
         // session list is left out: it is not what is under test here.
-        var environment = NexusAgentEngine.Environment.live
+        var environment = VitruvianCodeEngine.Environment.live
         environment.home = rig.home
         environment.listSessions = { _, _, _ in [] }
-        let session = NexusAgentQuickPromptSession(environment: environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: environment, host: RecordingHost())
 
         // One conversation.
-        XCTAssertTrue(session.delete(conversation("single"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("single"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(remaining(), ["aborted", "archived", "it's", "nested", "no-folder", "other-folder",
                                      "top-1", "top-2"], "one row is gone, the rest are there")
         XCTAssertFalse(conversationFiles().contains { $0.hasPrefix("single") })
         XCTAssertEqual(conversationFiles().count, (rows.count - 1) * 3 + 1)
 
         // An id that tries to be more than an id deletes nothing.
-        XCTAssertTrue(session.delete(conversation("x' OR '1'='1"), configuration: NexusAgentConfiguration()))
-        XCTAssertFalse(session.delete(conversation("../../keep"), configuration: NexusAgentConfiguration()))
+        XCTAssertTrue(session.delete(conversation("x' OR '1'='1"), configuration: VitruvianCodeConfiguration()))
+        XCTAssertFalse(session.delete(conversation("../../keep"), configuration: VitruvianCodeConfiguration()))
         XCTAssertEqual(remaining().count, rows.count - 1)
 
         // All of one folder's.
-        let count = await clearAll(session, in: NexusAgentConfiguration(workingDirectory: work))
+        let count = await clearAll(session, in: VitruvianCodeConfiguration(workingDirectory: work))
         XCTAssertEqual(count, 4)
         XCTAssertEqual(remaining(), ["aborted", "archived", "nested", "other-folder"],
                        "gone: the folder's top-level ones (one with a quote in its id) and the one with no folder. "
@@ -2349,11 +2349,11 @@ final class EngineHostTests: XCTestCase {
         return (database, conversations)
     }
 
-    private func realEnvironment(_ rig: Rig, busyTimeout: TimeInterval) -> NexusAgentEngine.Environment {
-        var environment = NexusAgentEngine.Environment.live
+    private func realEnvironment(_ rig: Rig, busyTimeout: TimeInterval) -> VitruvianCodeEngine.Environment {
+        var environment = VitruvianCodeEngine.Environment.live
         environment.home = rig.home
         environment.listSessions = { _, _, _ in [] }
-        environment.runSqlite = { NexusAgentEngine.runSqliteProcess($0, $1, $2, busyTimeout: busyTimeout) }
+        environment.runSqlite = { VitruvianCodeEngine.runSqliteProcess($0, $1, $2, busyTimeout: busyTimeout) }
         return environment
     }
 
@@ -2368,7 +2368,7 @@ final class EngineHostTests: XCTestCase {
         defer { holder.terminate() }
 
         let started = Date()
-        let deleted = NexusAgentEngine.deleteSession(id: "busy-1", provider: .antigravity,
+        let deleted = VitruvianCodeEngine.deleteSession(id: "busy-1", provider: .antigravity,
                                                      environment: realEnvironment(rig, busyTimeout: 0.4))
         let waited = Date().timeIntervalSince(started)
 
@@ -2394,7 +2394,7 @@ final class EngineHostTests: XCTestCase {
         defer { holder.terminate() }
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) { holder.terminate() }
 
-        let deleted = NexusAgentEngine.deleteSession(id: "busy-1", provider: .antigravity,
+        let deleted = VitruvianCodeEngine.deleteSession(id: "busy-1", provider: .antigravity,
                                                      environment: realEnvironment(rig, busyTimeout: 5))
 
         XCTAssertTrue(deleted)
@@ -2409,7 +2409,7 @@ final class EngineHostTests: XCTestCase {
         let index = try realIndex(rig)
 
         let started = Date()
-        let deleted = NexusAgentEngine.deleteSession(id: "busy-1", provider: .antigravity,
+        let deleted = VitruvianCodeEngine.deleteSession(id: "busy-1", provider: .antigravity,
                                                      environment: realEnvironment(rig, busyTimeout: 2))
 
         XCTAssertTrue(deleted)
@@ -2419,11 +2419,11 @@ final class EngineHostTests: XCTestCase {
     }
 
     func testTheDeleteItemHasWords() {
-        XCTAssertEqual(NexusAgentHostStrings().deleteSession, "Delete")
+        XCTAssertEqual(VitruvianCodeHostStrings().deleteSession, "Delete")
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
         host.strings.deleteSession = "Löschen"
         XCTAssertEqual(engine.hostStrings.deleteSession, "Löschen",
                        "the engine hands on the host's words as they are now")
@@ -2439,9 +2439,9 @@ final class EngineHostTests: XCTestCase {
         let host = RecordingHost()
         let key = "vitruvian.claude.hiddenSessionIds"
         let before = UserDefaults.standard.object(forKey: key) as? [String]
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
         XCTAssertNil(session.engine, "this is the session built without an engine")
-        let summary = NexusAgentSessionSummary(id: "abc-123", title: "t", steps: 1, modified: nil)
+        let summary = VitruvianCodeSessionSummary(id: "abc-123", title: "t", steps: 1, modified: nil)
 
         session.archive(summary, configuration: claudeConfiguration())
 
@@ -2461,7 +2461,7 @@ final class EngineHostTests: XCTestCase {
         defer { rig.tearDown() }
         rig.writeClaudeSession(id: "abc-123", prompt: "hello")
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
         host.hiddenClaudeSessionIDs = []
         session.refreshSessions(configuration: claudeConfiguration())
@@ -2482,8 +2482,8 @@ final class EngineHostTests: XCTestCase {
 
     // MARK: - A turn is reported to the host
 
-    private func finishOneTurn(_ rig: Rig, session: NexusAgentQuickPromptSession,
-                               configuration: NexusAgentConfiguration, reply: String, status: Int32) {
+    private func finishOneTurn(_ rig: Rig, session: VitruvianCodeQuickPromptSession,
+                               configuration: VitruvianCodeConfiguration, reply: String, status: Int32) {
         session.send("do it", configuration: configuration, agentPath: "/fake/agy")
         XCTAssertEqual(rig.agentRuns.count, 1)
         let line = #"{"event":"step_update","step_update":{"step_type":"agent_response","text_delta":"\#(reply)"}}"# + "\n"
@@ -2496,13 +2496,13 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         finishOneTurn(rig, session: engine.session, configuration: engine.configuration,
                       reply: "All done.", status: 0)
 
         XCTAssertEqual(host.finished.count, 1, "exactly one report per turn")
-        XCTAssertEqual(host.finished.first?.notice.providerName, NexusAgentCLIProvider.antigravity.name)
+        XCTAssertEqual(host.finished.first?.notice.providerName, VitruvianCodeCLIProvider.antigravity.name)
         XCTAssertEqual(host.finished.first?.isChatVisible, false,
                        "the base engine has no window, so the chat is never on screen")
         XCTAssertEqual(host.finished.first?.notice.text, "All done.")
@@ -2515,7 +2515,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.session.send("do it", configuration: engine.configuration, agentPath: "/fake/agy")
         XCTAssertEqual(rig.agentRuns.count, 1)
@@ -2530,7 +2530,7 @@ final class EngineHostTests: XCTestCase {
         // The notice goes out while the turn is still running, not at its end.
         XCTAssertTrue(engine.session.isRunning)
         XCTAssertEqual(host.approvals.count, 1, "exactly one notice for one request")
-        XCTAssertEqual(host.approvals.first?.providerName, NexusAgentCLIProvider.antigravity.name)
+        XCTAssertEqual(host.approvals.first?.providerName, VitruvianCodeCLIProvider.antigravity.name)
         XCTAssertEqual(host.approvals.first?.text, "Bash: ls -la")
         XCTAssertEqual(host.approvals.first?.failed, false)
         XCTAssertEqual(host.approvals.first?.endedCleanly, false)
@@ -2539,14 +2539,14 @@ final class EngineHostTests: XCTestCase {
         // What the standalone app makes of that notice: a notification when
         // nobody can see the Allow button, nothing more when they can.
         if let notice = host.approvals.first {
-            XCTAssertEqual(NexusAgentTurnAnnouncement.needsApproval(notice, isChatVisible: false,
+            XCTAssertEqual(VitruvianCodeTurnAnnouncement.needsApproval(notice, isChatVisible: false,
                                                                     strings: host.strings),
-                           NexusAgentTurnAnnouncement(playsSound: false,
+                           VitruvianCodeTurnAnnouncement(playsSound: false,
                                                       notificationTitle: "Antigravity CLI — Approval Required",
                                                       notificationBody: "Bash: ls -la"))
-            XCTAssertEqual(NexusAgentTurnAnnouncement.needsApproval(notice, isChatVisible: true,
+            XCTAssertEqual(VitruvianCodeTurnAnnouncement.needsApproval(notice, isChatVisible: true,
                                                                     strings: host.strings),
-                           NexusAgentTurnAnnouncement(playsSound: false))
+                           VitruvianCodeTurnAnnouncement(playsSound: false))
         }
 
         rig.agentExit?(0)
@@ -2557,7 +2557,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         finishOneTurn(rig, session: engine.session, configuration: engine.configuration,
                       reply: "", status: 1)
@@ -2571,9 +2571,9 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        finishOneTurn(rig, session: session, configuration: NexusAgentConfiguration(),
+        finishOneTurn(rig, session: session, configuration: VitruvianCodeConfiguration(),
                       reply: "ok", status: 0)
 
         XCTAssertEqual(host.finished.count, 1)
@@ -2585,15 +2585,15 @@ final class EngineHostTests: XCTestCase {
     // MARK: A failed turn says why
 
     /// What the standalone app does with a notice when its chat is out of sight.
-    private func announcedOutOfSight(_ notice: NexusAgentTurnNotice?) -> NexusAgentTurnAnnouncement? {
-        notice.map { NexusAgentTurnAnnouncement.finished($0, isChatVisible: false, strings: NexusAgentHostStrings()) }
+    private func announcedOutOfSight(_ notice: VitruvianCodeTurnNotice?) -> VitruvianCodeTurnAnnouncement? {
+        notice.map { VitruvianCodeTurnAnnouncement.finished($0, isChatVisible: false, strings: VitruvianCodeHostStrings()) }
     }
 
     func testAnAgentThatExitsBadlyReportsTheWordsOfItsErrorBubble() {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.session.send("do it", configuration: engine.configuration, agentPath: "/fake/agy")
         // Not stream JSON: agy's own complaint, which the bubble shows.
@@ -2610,7 +2610,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(notice?.text, "", "the reply is still the reply: there was none")
         XCTAssertEqual(notice?.failureDetail, bubble?.text, "the notice carries what the bubble says")
         XCTAssertEqual(announcedOutOfSight(notice),
-                       NexusAgentTurnAnnouncement(playsSound: false,
+                       VitruvianCodeTurnAnnouncement(playsSound: false,
                                                   notificationTitle: "Antigravity CLI — Failed",
                                                   notificationBody: "The agent stopped with an error.\nagy: quota exceeded"))
     }
@@ -2622,7 +2622,7 @@ final class EngineHostTests: XCTestCase {
     /// by nobody, so the host is told too, in the bubble's words. The same
     /// for every provider whose turns are run this way.
     func testAnAgentThatCannotBeStartedIsAFailedTurn() {
-        let providers: [(NexusAgentCLIProvider, path: String, model: String)] = [
+        let providers: [(VitruvianCodeCLIProvider, path: String, model: String)] = [
             (.antigravity, "/fake/agy", ""), (.claude, "/fake/claude", ""), (.ollama, "/fake/ollama", "m"),
         ]
         for (provider, path, model) in providers {
@@ -2630,7 +2630,7 @@ final class EngineHostTests: XCTestCase {
             defer { rig.tearDown() }
             rig.agentCannotStart = true
             let host = RecordingHost()
-            let engine = NexusAgentEngine(environment: rig.environment, host: host)
+            let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
             engine.updateActiveProvider(provider)
             var configuration = engine.configuration
             configuration.model = model
@@ -2651,7 +2651,7 @@ final class EngineHostTests: XCTestCase {
             XCTAssertEqual(notice?.text, "", "\(provider.name): there was no reply")
             XCTAssertEqual(notice?.failureDetail, bubble?.text, "\(provider.name): the notice carries what the bubble says")
             XCTAssertEqual(announcedOutOfSight(notice),
-                           NexusAgentTurnAnnouncement(playsSound: false,
+                           VitruvianCodeTurnAnnouncement(playsSound: false,
                                                       notificationTitle: "\(provider.name) — Failed",
                                                       notificationBody: host.strings.agentFailed),
                            provider.name)
@@ -2670,11 +2670,11 @@ final class EngineHostTests: XCTestCase {
     /// The agent's program is not installed at all: the same failed turn,
     /// in the words of the bubble that says it is missing.
     func testAnAgentThatIsNotInstalledIsAFailedTurn() {
-        for provider in [NexusAgentCLIProvider.antigravity, .claude, .ollama] {
+        for provider in [VitruvianCodeCLIProvider.antigravity, .claude, .ollama] {
             let rig = Rig()
             defer { rig.tearDown() }
             let host = RecordingHost()
-            let engine = NexusAgentEngine(environment: rig.environment, host: host)
+            let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
             engine.updateActiveProvider(provider)
 
             engine.session.send("do it", configuration: engine.configuration, agentPath: nil)
@@ -2699,10 +2699,10 @@ final class EngineHostTests: XCTestCase {
     /// What the chat says when a built-in provider's program is not
     /// installed: agy's own sentence for agy, and for the others the
     /// sentence a missing command gets, naming the program looked for.
-    private func wordsForMissing(_ provider: NexusAgentCLIProvider) -> String {
+    private func wordsForMissing(_ provider: VitruvianCodeCLIProvider) -> String {
         switch provider.id {
-        case NexusAgentCLIProvider.claude.id: return "Could not find 'claude' in PATH. Is it installed?"
-        case NexusAgentCLIProvider.ollama.id: return "Could not find 'ollama' in PATH. Is it installed?"
+        case VitruvianCodeCLIProvider.claude.id: return "Could not find 'claude' in PATH. Is it installed?"
+        case VitruvianCodeCLIProvider.ollama.id: return "Could not find 'ollama' in PATH. Is it installed?"
         default: return "The Antigravity CLI (agy) was not found."
         }
     }
@@ -2718,8 +2718,8 @@ final class EngineHostTests: XCTestCase {
         host.strings.missingAgent = "agy fehlt."
         host.strings.commandNotFoundPrefix = "Nicht gefunden: "
         host.strings.commandNotFoundSuffix = "."
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
-        let cases: [(NexusAgentCLIProvider, String)] = [
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
+        let cases: [(VitruvianCodeCLIProvider, String)] = [
             (.antigravity, "agy fehlt."), (.claude, "Nicht gefunden: claude."), (.ollama, "Nicht gefunden: ollama."),
             (ownProvider(), "Nicht gefunden: llm."),
             (ownProvider("\"/Applications/My Tool/run\" {prompt}"), "Nicht gefunden: /Applications/My Tool/run."),
@@ -2753,8 +2753,8 @@ final class EngineHostTests: XCTestCase {
         let host = RecordingHost()
         rig.files[rig.defaultBot] = ""
         let env = rig.defaultBot + "/.env"
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
-        let fallback = NexusAgentSupport.templateFallbackModel
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
+        let fallback = VitruvianCodeSupport.templateFallbackModel
         // The template, the model in the settings file, the program named.
         let cases: [(String, String, String)] = [
             ("llm -m {model} \"{prompt}\"", "gemma3:4b", "llm"),
@@ -2792,9 +2792,9 @@ final class EngineHostTests: XCTestCase {
         rig.holdsProgram = true
         rig.agentCannotStart = true
         let host = RecordingHost()
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         await rig.wait { !rig.programRuns.isEmpty }
         session.stop()
         rig.finishProgram()
@@ -2808,7 +2808,7 @@ final class EngineHostTests: XCTestCase {
 
         // Dropped by New chat while waiting: nothing at all is reported.
         rig.holdsProgram = true
-        session.send("hi", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("hi", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         await rig.wait { rig.programRuns.count == 2 }
         session.newChat()
         rig.finishProgram()
@@ -2820,7 +2820,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         // With no reply: the error has a bubble of its own.
         engine.session.send("one", configuration: engine.configuration, agentPath: "/fake/agy")
@@ -2843,7 +2843,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(host.finished.last?.notice.failed, true)
         XCTAssertEqual(host.finished.last?.notice.failureDetail, "Lost the connection")
         XCTAssertEqual(announcedOutOfSight(host.finished.last?.notice),
-                       NexusAgentTurnAnnouncement(playsSound: false,
+                       VitruvianCodeTurnAnnouncement(playsSound: false,
                                                   notificationTitle: "Antigravity CLI — Failed",
                                                   notificationBody: "Lost the connection"))
         XCTAssertEqual(host.finished.count, 2)
@@ -2853,7 +2853,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         finishOneTurn(rig, session: engine.session, configuration: engine.configuration,
                       reply: "All done.", status: 0)
@@ -2866,7 +2866,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.session.send("do it", configuration: engine.configuration, agentPath: "/fake/agy")
         engine.session.stop()
@@ -2880,7 +2880,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(notice?.text, "")
         XCTAssertNil(notice?.failureDetail, "nothing went wrong that has words")
         XCTAssertEqual(host.finished.first?.isChatVisible, false)
-        XCTAssertEqual(announcedOutOfSight(notice), NexusAgentTurnAnnouncement(playsSound: false),
+        XCTAssertEqual(announcedOutOfSight(notice), VitruvianCodeTurnAnnouncement(playsSound: false),
                        "the user stopped it: no \"Failed\" notification")
     }
 
@@ -2888,7 +2888,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
 
         engine.session.send("do it", configuration: engine.configuration, agentPath: "/fake/agy")
         rig.agentOutput?(Data((#"{"event":"step_update","step_update":{"step_type":"agent_response","text_delta":"So far so good\nand more"}}"# + "\n").utf8))
@@ -2901,7 +2901,7 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(notice?.endedCleanly, false)
         XCTAssertNil(notice?.failureDetail)
         XCTAssertEqual(announcedOutOfSight(notice),
-                       NexusAgentTurnAnnouncement(playsSound: false,
+                       VitruvianCodeTurnAnnouncement(playsSound: false,
                                                   notificationTitle: "Antigravity CLI — Done",
                                                   notificationBody: "So far so good"))
     }
@@ -2917,11 +2917,11 @@ final class EngineHostTests: XCTestCase {
         rig.holdsProgram = true
         let host = RecordingHost()
         host.planMode = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
         XCTAssertTrue(session.planMode)
 
         // Yolo in the settings: without plan mode this turn would skip every prompt.
-        session.send("tidy up", configuration: NexusAgentConfiguration(approvalMode: .yolo, activeProvider: .ollama),
+        session.send("tidy up", configuration: VitruvianCodeConfiguration(approvalMode: .yolo, activeProvider: .ollama),
                      agentPath: "/fake/ollama")
         await rig.wait { !rig.programRuns.isEmpty }
         XCTAssertTrue(rig.agentRuns.isEmpty, "still waiting for the model")
@@ -2935,12 +2935,12 @@ final class EngineHostTests: XCTestCase {
         XCTAssertEqual(PermissionArgumentsTests.permissionArguments(in: started), ["--permission-mode", "plan"],
                        "the turn was sent in plan mode, and runs in it")
         XCTAssertFalse(PermissionArgumentsTests.skipsPermissionPrompts(started))
-        XCTAssertTrue(started.contains(NexusAgentSupport.planModePrompt("tidy up")),
+        XCTAssertTrue(started.contains(VitruvianCodeSupport.planModePrompt("tidy up")),
                       "with plan mode's words in front of the prompt, as Ollama gets them")
         rig.agentExit?(0)
 
         // The next turn is sent with plan mode off, and is not in it.
-        session.send("again", configuration: NexusAgentConfiguration(approvalMode: .yolo, model: "m", activeProvider: .ollama),
+        session.send("again", configuration: VitruvianCodeConfiguration(approvalMode: .yolo, model: "m", activeProvider: .ollama),
                      agentPath: "/fake/ollama")
         XCTAssertTrue(PermissionArgumentsTests.skipsPermissionPrompts(rig.agentRuns.last?.arguments ?? []))
         rig.agentExit?(0)
@@ -2951,9 +2951,9 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         rig.holdsProgram = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: RecordingHost())
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: RecordingHost())
 
-        session.send("tidy up", configuration: NexusAgentConfiguration(approvalMode: .acceptEdits, activeProvider: .ollama),
+        session.send("tidy up", configuration: VitruvianCodeConfiguration(approvalMode: .acceptEdits, activeProvider: .ollama),
                      agentPath: "/fake/ollama")
         await rig.wait { !rig.programRuns.isEmpty }
         session.planMode = true
@@ -2973,9 +2973,9 @@ final class EngineHostTests: XCTestCase {
         rig.holdsProgram = true
         let host = RecordingHost()
         host.worktreeMode = true
-        let session = NexusAgentQuickPromptSession(environment: rig.environment, host: host)
+        let session = VitruvianCodeQuickPromptSession(environment: rig.environment, host: host)
 
-        session.send("tidy up", configuration: NexusAgentConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
+        session.send("tidy up", configuration: VitruvianCodeConfiguration(activeProvider: .ollama), agentPath: "/fake/ollama")
         await rig.wait { !rig.programRuns.isEmpty }
         session.worktreeMode = false
         rig.finishProgram()
@@ -2989,7 +2989,7 @@ final class EngineHostTests: XCTestCase {
     // MARK: - Text
 
     func testEveryDefaultTextIsFilledIn() {
-        let fields = Mirror(reflecting: NexusAgentHostStrings()).children
+        let fields = Mirror(reflecting: VitruvianCodeHostStrings()).children
         XCTAssertFalse(fields.isEmpty)
         for field in fields {
             guard let value = field.value as? String else {
@@ -3001,7 +3001,7 @@ final class EngineHostTests: XCTestCase {
     }
 
     func testEveryProblemHasWords() {
-        let strings = NexusAgentHostStrings()
+        let strings = VitruvianCodeHostStrings()
         XCTAssertEqual(strings.problemMissingToken, "Add your Telegram bot token in Settings before starting the bot.")
         XCTAssertEqual(strings.problemMissingBot, "The bot is not installed: src/bot.js was not found in the bot folder.")
         XCTAssertEqual(strings.problemMissingNode, "Node.js was not found. Install Node, then start the bot again.")
@@ -3013,7 +3013,7 @@ final class EngineHostTests: XCTestCase {
         let rig = Rig()
         defer { rig.tearDown() }
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
         XCTAssertNil(engine.problemDescription, "nothing has gone wrong yet")
 
         // No bot installed.
@@ -3042,11 +3042,11 @@ final class EngineHostTests: XCTestCase {
         let env = rig.defaultBot + "/.env"
         rig.files[env] = "TELEGRAM_BOT_TOKEN=1:abc\nAGY_MODEL=gemini-4-argon-medium\n"
         let host = RecordingHost()
-        let engine = NexusAgentEngine(environment: rig.environment, host: host)
+        let engine = VitruvianCodeEngine(environment: rig.environment, host: host)
         engine.load()
 
         // Built-in default catalog is populated immediately for the active provider.
-        XCTAssertEqual(engine.activeProvider.id, NexusAgentCLIProvider.antigravity.id)
+        XCTAssertEqual(engine.activeProvider.id, VitruvianCodeCLIProvider.antigravity.id)
         XCTAssertEqual(engine.configuration.model, "gemini-4-argon-medium")
         XCTAssertFalse(engine.availableModels.isEmpty)
 
@@ -3058,7 +3058,7 @@ final class EngineHostTests: XCTestCase {
         // Selecting a model records it on the configuration and in the host's per-provider map.
         engine.selectModel("anthropic/claude-opus-5-5")
         XCTAssertEqual(engine.configuration.model, "anthropic/claude-opus-5-5")
-        XCTAssertEqual(host.chosenModels[NexusAgentCLIProvider.opencode.id], "anthropic/claude-opus-5-5")
+        XCTAssertEqual(host.chosenModels[VitruvianCodeCLIProvider.opencode.id], "anthropic/claude-opus-5-5")
 
         // Saving configuration (for example, changing the working folder) while on OpenCode
         // does not overwrite the Telegram bot's AGY_MODEL in .env.
@@ -3066,25 +3066,25 @@ final class EngineHostTests: XCTestCase {
         next.workingDirectory = "/tmp/project"
         XCTAssertTrue(engine.save(next))
         XCTAssertEqual(engine.configuration.model, "anthropic/claude-opus-5-5")
-        XCTAssertEqual(NexusAgentEnvFile.parse(rig.files[env] ?? "").model, "gemini-4-argon-medium")
+        XCTAssertEqual(VitruvianCodeEnvFile.parse(rig.files[env] ?? "").model, "gemini-4-argon-medium")
 
         // Switching back to Antigravity restores its model from .env, and selecting a new one remembers it.
         engine.updateActiveProvider(.antigravity)
         XCTAssertEqual(engine.configuration.model, "gemini-4-argon-medium")
         engine.selectModel("gemini-4-argon-high")
         XCTAssertEqual(engine.configuration.model, "gemini-4-argon-high")
-        XCTAssertEqual(host.chosenModels[NexusAgentCLIProvider.antigravity.id], "gemini-4-argon-high")
+        XCTAssertEqual(host.chosenModels[VitruvianCodeCLIProvider.antigravity.id], "gemini-4-argon-high")
 
         // A freshly created engine restores the remembered model for the chosen provider from the host.
-        host.chosenProviderID = NexusAgentCLIProvider.opencode.id
-        let relaunched = NexusAgentEngine(environment: rig.environment, host: host)
-        XCTAssertEqual(relaunched.activeProvider.id, NexusAgentCLIProvider.opencode.id)
+        host.chosenProviderID = VitruvianCodeCLIProvider.opencode.id
+        let relaunched = VitruvianCodeEngine(environment: rig.environment, host: host)
+        XCTAssertEqual(relaunched.activeProvider.id, VitruvianCodeCLIProvider.opencode.id)
         XCTAssertEqual(relaunched.configuration.model, "anthropic/claude-opus-5-5")
 
         // Clearing the model (Default / Auto) records an explicit empty override.
         relaunched.selectModel("")
         XCTAssertEqual(relaunched.configuration.model, "")
-        XCTAssertEqual(host.chosenModels[NexusAgentCLIProvider.opencode.id], "")
+        XCTAssertEqual(host.chosenModels[VitruvianCodeCLIProvider.opencode.id], "")
     }
 
     // MARK: - The shared code stays free of any one app
@@ -3094,7 +3094,7 @@ final class EngineHostTests: XCTestCase {
     /// (the `shared_sources` data); under SwiftPM or Xcode the test file's
     /// own path leads to them.
     private func sharedSourcesDirectory() -> String? {
-        let relative = "apps/desktop/nexus-agent/macos/Sources/NexusAgentCore"
+        let relative = "apps/desktop/vitruvian-code/macos/Sources/VitruvianCodeCore"
         var candidates: [String] = []
         let environment = ProcessInfo.processInfo.environment
         if let runfiles = environment["TEST_SRCDIR"] {
@@ -3103,13 +3103,13 @@ final class EngineHostTests: XCTestCase {
             }
         }
         let here = (#filePath as NSString).deletingLastPathComponent
-        candidates.append((here as NSString).deletingLastPathComponent + "/Sources/NexusAgentCore")
+        candidates.append((here as NSString).deletingLastPathComponent + "/Sources/VitruvianCodeCore")
         return candidates.first { FileManager.default.fileExists(atPath: $0) }
     }
 
     private func sharedSwiftFiles() -> [(name: String, text: String)] {
         guard let directory = sharedSourcesDirectory() else {
-            XCTFail("could not find the NexusAgentCore sources to check")
+            XCTFail("could not find the VitruvianCodeCore sources to check")
             return []
         }
         let names = ((try? FileManager.default.subpathsOfDirectory(atPath: directory)) ?? [])

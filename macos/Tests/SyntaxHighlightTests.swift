@@ -18,16 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import NexusAgentUI
+import VitruvianCodeUI
 import XCTest
 
 /// The code-block highlighter, and running a shell block.
 final class SyntaxHighlightTests: XCTestCase {
-    typealias Kind = NexusAgentSyntaxHighlighter.Token.Kind
+    typealias Kind = VitruvianCodeSyntaxHighlighter.Token.Kind
 
     private func kinds(_ code: String, _ language: String?) -> [String: Kind] {
         var result: [String: Kind] = [:]
-        for token in NexusAgentSyntaxHighlighter.tokens(code: code, language: language) {
+        for token in VitruvianCodeSyntaxHighlighter.tokens(code: code, language: language) {
             result[token.text] = token.kind
         }
         return result
@@ -100,54 +100,54 @@ final class SyntaxHighlightTests: XCTestCase {
     }
 
     func testUnknownLanguageIsPlainAndHighlightKeepsTheText() {
-        XCTAssertTrue(NexusAgentSyntaxHighlighter.tokens(code: "let x = 1", language: "brainfuck").isEmpty)
+        XCTAssertTrue(VitruvianCodeSyntaxHighlighter.tokens(code: "let x = 1", language: "brainfuck").isEmpty)
         for language in ["swift", "python", "bash", "json", "yaml", "diff", nil] {
             let code = "let x = \"é😀\" // ü\n# z\n+ 1"
-            XCTAssertEqual(String(NexusAgentSyntaxHighlighter.highlight(code: code, language: language).characters), code)
+            XCTAssertEqual(String(VitruvianCodeSyntaxHighlighter.highlight(code: code, language: language).characters), code)
         }
     }
 
     func testShellLanguages() {
-        XCTAssertTrue(NexusAgentSyntaxHighlighter.isShell("bash"))
-        XCTAssertTrue(NexusAgentSyntaxHighlighter.isShell("Console"))
-        XCTAssertFalse(NexusAgentSyntaxHighlighter.isShell("swift"))
-        XCTAssertFalse(NexusAgentSyntaxHighlighter.isShell(nil))
+        XCTAssertTrue(VitruvianCodeSyntaxHighlighter.isShell("bash"))
+        XCTAssertTrue(VitruvianCodeSyntaxHighlighter.isShell("Console"))
+        XCTAssertFalse(VitruvianCodeSyntaxHighlighter.isShell("swift"))
+        XCTAssertFalse(VitruvianCodeSyntaxHighlighter.isShell(nil))
     }
 
     func testConsoleTranscriptRunsOnlyThePromptedLines() {
-        XCTAssertEqual(NexusAgentShellSnippet.runnableScript(from: "$ ls -la\ntotal 0\n$ pwd\n/x"), "ls -la\npwd")
-        XCTAssertEqual(NexusAgentShellSnippet.runnableScript(from: "brew update\nbrew upgrade"), "brew update\nbrew upgrade")
+        XCTAssertEqual(VitruvianCodeShellSnippet.runnableScript(from: "$ ls -la\ntotal 0\n$ pwd\n/x"), "ls -la\npwd")
+        XCTAssertEqual(VitruvianCodeShellSnippet.runnableScript(from: "brew update\nbrew upgrade"), "brew update\nbrew upgrade")
     }
 
     func testCommandFileDeletesItselfAndQuotesTheFolder() {
-        let file = NexusAgentShellSnippet.commandFile(script: "make", directory: "/it's here")
+        let file = VitruvianCodeShellSnippet.commandFile(script: "make", directory: "/it's here")
         let lines = file.components(separatedBy: "\n")
         XCTAssertTrue(lines[0].hasPrefix("#!"))
         XCTAssertEqual(lines[1], "rm -f -- \"$0\"")
         XCTAssertEqual(lines[2], "cd -- '/it'\\''s here' || exit 1")
         XCTAssertTrue(file.hasSuffix("make\n"))
-        XCTAssertFalse(NexusAgentShellSnippet.commandFile(script: "ls", directory: nil).contains("cd --"))
+        XCTAssertFalse(VitruvianCodeShellSnippet.commandFile(script: "ls", directory: nil).contains("cd --"))
     }
 
     func testRunAsksFirst() {
         let start = Date(timeIntervalSince1970: 1000)
-        XCTAssertFalse(NexusAgentRunSnippetGuard.clickRuns(firstClick: nil, now: start))
-        XCTAssertTrue(NexusAgentRunSnippetGuard.clickRuns(firstClick: start, now: start.addingTimeInterval(2.9)))
-        XCTAssertFalse(NexusAgentRunSnippetGuard.clickRuns(firstClick: start, now: start.addingTimeInterval(3)))
-        XCTAssertFalse(NexusAgentRunSnippetGuard.clickRuns(firstClick: start, now: start.addingTimeInterval(-1)))
+        XCTAssertFalse(VitruvianCodeRunSnippetGuard.clickRuns(firstClick: nil, now: start))
+        XCTAssertTrue(VitruvianCodeRunSnippetGuard.clickRuns(firstClick: start, now: start.addingTimeInterval(2.9)))
+        XCTAssertFalse(VitruvianCodeRunSnippetGuard.clickRuns(firstClick: start, now: start.addingTimeInterval(3)))
+        XCTAssertFalse(VitruvianCodeRunSnippetGuard.clickRuns(firstClick: start, now: start.addingTimeInterval(-1)))
     }
 
     func testThinkingPill() {
-        let strings = NexusAgentChatStrings()
-        XCTAssertNil(NexusAgentThinkingPill.label(durationMs: nil, tokens: nil, isStreaming: true, strings: strings))
-        XCTAssertEqual(NexusAgentThinkingPill.label(durationMs: 4200, tokens: 320, isStreaming: false, strings: strings),
+        let strings = VitruvianCodeChatStrings()
+        XCTAssertNil(VitruvianCodeThinkingPill.label(durationMs: nil, tokens: nil, isStreaming: true, strings: strings))
+        XCTAssertEqual(VitruvianCodeThinkingPill.label(durationMs: 4200, tokens: 320, isStreaming: false, strings: strings),
                        "Thought for 4s · 320 tok")
-        XCTAssertEqual(NexusAgentThinkingPill.label(durationMs: nil, tokens: 420, isStreaming: true, strings: strings),
+        XCTAssertEqual(VitruvianCodeThinkingPill.label(durationMs: nil, tokens: 420, isStreaming: true, strings: strings),
                        "Thinking… · 420 tok")
-        XCTAssertEqual(NexusAgentThinkingPill.label(durationMs: nil, tokens: 420, isStreaming: false, strings: strings),
+        XCTAssertEqual(VitruvianCodeThinkingPill.label(durationMs: nil, tokens: 420, isStreaming: false, strings: strings),
                        "Thought · 420 tok")
-        XCTAssertEqual(NexusAgentThinkingPill.duration(400), "<1s")
-        XCTAssertEqual(NexusAgentThinkingPill.duration(65_000), "1m 5s")
-        XCTAssertEqual(NexusAgentThinkingPill.duration(120_000), "2m")
+        XCTAssertEqual(VitruvianCodeThinkingPill.duration(400), "<1s")
+        XCTAssertEqual(VitruvianCodeThinkingPill.duration(65_000), "1m 5s")
+        XCTAssertEqual(VitruvianCodeThinkingPill.duration(120_000), "2m")
     }
 }

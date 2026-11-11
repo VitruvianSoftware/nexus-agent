@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import NexusAgentUI
+import VitruvianCodeUI
 import XCTest
 
 /// `file:line` references in a reply become links that open the file.
 final class PathLinkTests: XCTestCase {
     private func link(_ text: String, cwd: String? = "/repo") -> String {
-        NexusAgentPathLinks.linkify(text, workingDirectory: cwd)
+        VitruvianCodePathLinks.linkify(text, workingDirectory: cwd)
     }
 
     func testRelativePathResolvesAgainstTheWorkingFolder() {

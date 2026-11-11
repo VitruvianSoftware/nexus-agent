@@ -21,13 +21,13 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// How full the context window is, as the chat's header shows it: the
 /// latest step's tokens (never a sum over steps) against the model's window.
 final class ContextUsageTests: XCTestCase {
-    private func usage(_ input: Int, _ cached: Int, _ output: Int, window: Int = 200_000) -> NexusAgentContextUsage {
-        NexusAgentContextUsage(inputTokens: input, cachedTokens: cached, outputTokens: output, contextWindow: window)
+    private func usage(_ input: Int, _ cached: Int, _ output: Int, window: Int = 200_000) -> VitruvianCodeContextUsage {
+        VitruvianCodeContextUsage(inputTokens: input, cachedTokens: cached, outputTokens: output, contextWindow: window)
     }
 
     func testFormatting() {
@@ -57,17 +57,17 @@ final class ContextUsageTests: XCTestCase {
     }
 
     func testAnEstimateSaysSo() {
-        let estimate = NexusAgentContextUsage.estimate(characters: 4_000, contextWindow: 200_000)
+        let estimate = VitruvianCodeContextUsage.estimate(characters: 4_000, contextWindow: 200_000)
         XCTAssertTrue(estimate.isEstimate)
         XCTAssertEqual(estimate.totalTokens, 1_000)
         XCTAssertEqual(estimate.badgeLabel, "~1k · 1%")
         XCTAssertTrue(estimate.tooltipText.contains("Estimated"))
-        XCTAssertEqual(NexusAgentContextUsage.estimate(characters: 2, contextWindow: 1).totalTokens, 1)
+        XCTAssertEqual(VitruvianCodeContextUsage.estimate(characters: 2, contextWindow: 1).totalTokens, 1)
     }
 
     func testDefaultContextWindow() {
-        func window(_ model: String?, _ provider: NexusAgentCLIProvider) -> Int {
-            NexusAgentContextUsage.defaultContextWindow(for: model, provider: provider)
+        func window(_ model: String?, _ provider: VitruvianCodeCLIProvider) -> Int {
+            VitruvianCodeContextUsage.defaultContextWindow(for: model, provider: provider)
         }
         XCTAssertEqual(window(nil, .claude), 200_000)
         XCTAssertEqual(window("claude-opus-5-5", .claude), 200_000)
@@ -89,16 +89,16 @@ final class ContextUsageTests: XCTestCase {
     // MARK: - Claude
 
     func testClaudeUsageCountsBothCacheKinds() {
-        let context = NexusAgentContextUsage.claude(usage: [
+        let context = VitruvianCodeContextUsage.claude(usage: [
             "input_tokens": 2, "cache_creation_input_tokens": 68_627, "cache_read_input_tokens": 10_718,
             "output_tokens": 422,
         ])
         XCTAssertEqual(context, usage(2, 79_345, 422, window: 0))
-        XCTAssertNil(NexusAgentContextUsage.claude(usage: ["input_tokens": 0]))
+        XCTAssertNil(VitruvianCodeContextUsage.claude(usage: ["input_tokens": 0]))
     }
 
     func testClaudeUsageFallsBackToTheLastIteration() {
-        let context = NexusAgentContextUsage.claude(usage: [
+        let context = VitruvianCodeContextUsage.claude(usage: [
             "input_tokens": 0, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0, "output_tokens": 9,
             "iterations": [
                 ["input_tokens": 1, "cache_read_input_tokens": 100, "output_tokens": 1],
@@ -115,16 +115,16 @@ final class ContextUsageTests: XCTestCase {
             #"{"type":"user","message":{"role":"user","content":"more"}}"#,
             #"{"type":"assistant","message":{"model":"claude-opus-5-5","content":[{"type":"text","text":"Sure"}],"usage":{"input_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0,"output_tokens":5,"iterations":[{"input_tokens":5,"cache_read_input_tokens":12100,"cache_creation_input_tokens":300,"output_tokens":60}]}}}"#,
         ].joined(separator: "\n")
-        let messages = try XCTUnwrap(NexusAgentEngine.parseClaudeTranscript(transcript))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.parseClaudeTranscript(transcript))
         XCTAssertEqual(messages.map(\.text), ["hi", "Hello", "more", "Sure"])
         XCTAssertEqual(messages[1].contextUsage, usage(3, 12_000, 40, window: 0))
         XCTAssertEqual(messages[3].contextUsage, usage(5, 12_400, 60, window: 0))
         XCTAssertEqual(messages[3].modelName, "claude-opus-5-5")
         XCTAssertNil(messages[0].contextUsage)
 
-        let current = try XCTUnwrap(NexusAgentQuickPromptSession.contextUsage(of: messages, provider: .claude, model: nil))
+        let current = try XCTUnwrap(VitruvianCodeQuickPromptSession.contextUsage(of: messages, provider: .claude, model: nil))
         XCTAssertEqual(current, usage(5, 12_400, 60), "the latest step, not a sum, with Claude's window")
-        XCTAssertEqual(NexusAgentQuickPromptSession.contextUsage(of: messages, provider: .claude, model: "opus[1m]")?
+        XCTAssertEqual(VitruvianCodeQuickPromptSession.contextUsage(of: messages, provider: .claude, model: "opus[1m]")?
                         .contextWindow, 1_000_000, "the model the settings name says more than the transcript's")
     }
 
@@ -135,10 +135,10 @@ final class ContextUsageTests: XCTestCase {
             ["type": "user", "data": #"{"text":"hi"}"#],
             ["type": "assistant", "data": #"{"model":{"id":"glm-5.3-flash-free","providerID":"opencode"},"content":[{"type":"text","text":"Hi there! I am ready to help."}],"tokens":{"input":679,"output":124,"reasoning":0,"cache":{"read":32640,"write":0}}}"#],
         ]
-        let messages = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows))
         XCTAssertEqual(messages[1].contextUsage, usage(679, 32_640, 124, window: 0))
         XCTAssertEqual(messages[1].modelName, "glm-5.3-flash-free")
-        XCTAssertEqual(NexusAgentQuickPromptSession.contextUsage(of: messages, provider: .opencode, model: "")?.badgeLabel,
+        XCTAssertEqual(VitruvianCodeQuickPromptSession.contextUsage(of: messages, provider: .opencode, model: "")?.badgeLabel,
                        "33.4k · 17%")
     }
 
@@ -149,20 +149,20 @@ final class ContextUsageTests: XCTestCase {
             ["type": "assistant", "data": #"{"content":[],"tokens":{"input":20,"output":7,"cache":{"read":1500,"write":100}}}"#],
             ["type": "assistant", "data": #"{"content":[{"type":"text","text":"Done."}],"tokens":{"input":30,"output":9,"cache":{"read":2000,"write":0}}}"#],
         ]
-        let messages = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows))
         XCTAssertEqual(messages.count, 2)
         XCTAssertEqual(messages[1].contextUsage, usage(30, 2_000, 9, window: 0))
     }
 
     func testAnOpenCode1TranscriptReadsTheTokensColumn() throws {
-        XCTAssertTrue(NexusAgentEngine.opencodeTranscriptQueries(conversationID: "s")[1]
+        XCTAssertTrue(VitruvianCodeEngine.opencodeTranscriptQueries(conversationID: "s")[1]
                         .contains("json_extract(m.data, '$.tokens') AS tokens"))
         let rows: [[String: Any]] = [
             ["message_id": "m1", "role": "user", "data": #"{"type":"text","text":"hi"}"#],
             ["message_id": "m2", "role": "assistant", "data": #"{"type":"text","text":"Hello"}"#,
              "tokens": #"{"input":100,"output":20,"cache":{"read":5000,"write":0}}"#, "model_id": "gpt-5"],
         ]
-        let messages = try XCTUnwrap(NexusAgentEngine.parseOpenCodeMessages(rows))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.parseOpenCodeMessages(rows))
         XCTAssertEqual(messages[1].contextUsage, usage(100, 5_000, 20, window: 0))
         XCTAssertEqual(messages[1].modelName, "gpt-5")
     }
@@ -178,7 +178,7 @@ final class ContextUsageTests: XCTestCase {
         try #"{"type":"USER_INPUT","content":"hi"}"#.appending("\n")
             .appending(#"{"type":"PLANNER_RESPONSE","content":"Hello"}"#)
             .write(toFile: logs + "/transcript.jsonl", atomically: true, encoding: .utf8)
-        XCTAssertNil(NexusAgentEngine.readAntigravityContextUsage(conversationID: id, home: home), "no telemetry, no count")
+        XCTAssertNil(VitruvianCodeEngine.readAntigravityContextUsage(conversationID: id, home: home), "no telemetry, no count")
 
         let state: [String: Any] = [logs + "/transcript.jsonl": [
             "turns": 5, "model": "gemini-3.7-flash",
@@ -186,11 +186,11 @@ final class ContextUsageTests: XCTestCase {
         ]]
         try JSONSerialization.data(withJSONObject: state)
             .write(to: URL(fileURLWithPath: home + "/.gemini/antigravity/.telemetry_state.json"))
-        let read = try XCTUnwrap(NexusAgentEngine.readAntigravityContextUsage(conversationID: id, home: home))
+        let read = try XCTUnwrap(VitruvianCodeEngine.readAntigravityContextUsage(conversationID: id, home: home))
         XCTAssertEqual(read.usage, usage(4_500, 32_000, 352, window: 1_000_000))
         XCTAssertEqual(read.model, "gemini-3.7-flash")
 
-        let messages = try XCTUnwrap(NexusAgentEngine.readTranscript(home: home, conversationID: id))
+        let messages = try XCTUnwrap(VitruvianCodeEngine.readTranscript(home: home, conversationID: id))
         XCTAssertEqual(messages.last?.contextUsage, read.usage, "the transcript's last reply carries it")
     }
 
@@ -198,13 +198,13 @@ final class ContextUsageTests: XCTestCase {
 
     func testAClaudeStepSaysItsContextAsItEnds() {
         let line = #"{"type":"assistant","message":{"model":"claude-opus-5-5","content":[],"usage":{"input_tokens":3,"cache_read_input_tokens":30000,"cache_creation_input_tokens":2000,"output_tokens":100}}}"#
-        XCTAssertEqual(NexusAgentStreamEvent.parse(line), .contextUsage(usage(3, 32_000, 100, window: 0)))
-        XCTAssertNil(NexusAgentStreamEvent.parse(#"{"type":"assistant","message":{"content":[]}}"#))
+        XCTAssertEqual(VitruvianCodeStreamEvent.parse(line), .contextUsage(usage(3, 32_000, 100, window: 0)))
+        XCTAssertNil(VitruvianCodeStreamEvent.parse(#"{"type":"assistant","message":{"content":[]}}"#))
     }
 
     func testAClaudeResultGivesOneStepsShareAndTheExactWindow() throws {
         let line = #"{"type":"result","num_turns":2,"usage":{"input_tokens":10,"cache_read_input_tokens":60000,"cache_creation_input_tokens":4000,"output_tokens":200},"modelUsage":{"claude-haiku":{"inputTokens":50,"contextWindow":200000},"claude-opus-5-5":{"inputTokens":10,"cacheReadInputTokens":60000,"contextWindow":1000000}},"result":"ok"}"#
-        guard case .finished(_, _, _, _, let metrics)? = NexusAgentStreamEvent.parse(line) else {
+        guard case .finished(_, _, _, _, let metrics)? = VitruvianCodeStreamEvent.parse(line) else {
             return XCTFail("a result finishes the turn")
         }
         XCTAssertEqual(metrics?.contextUsage, usage(5, 32_000, 100, window: 1_000_000),
@@ -213,23 +213,23 @@ final class ContextUsageTests: XCTestCase {
 
     func testAnOpenCodeToolStepSaysItsContext() {
         let line = #"{"type":"step_finish","sessionID":"ses_1","part":{"reason":"tool-calls","tokens":{"input":5,"output":2,"cache":{"read":100,"write":10}}}}"#
-        XCTAssertEqual(NexusAgentStreamEvent.parse(line), .contextUsage(usage(5, 110, 2, window: 0)))
+        XCTAssertEqual(VitruvianCodeStreamEvent.parse(line), .contextUsage(usage(5, 110, 2, window: 0)))
     }
 
     func testAnAntigravityResultGivesOneTurnsShare() {
         let line = #"{"event":"result","result":{"status":"ok","num_turns":2,"usage":{"input_tokens":400,"output_tokens":60,"cache_read_tokens":8000}}}"#
-        guard case .finished(_, _, _, _, let metrics)? = NexusAgentStreamEvent.parse(line) else {
+        guard case .finished(_, _, _, _, let metrics)? = VitruvianCodeStreamEvent.parse(line) else {
             return XCTFail("a result finishes the turn")
         }
         XCTAssertEqual(metrics?.contextUsage, usage(200, 4_000, 30, window: 0))
     }
 
     func testAConversationWithNoCountsIsEstimated() throws {
-        let messages = [NexusAgentChatMessage(role: .user, text: String(repeating: "a", count: 400))]
-        let estimate = try XCTUnwrap(NexusAgentQuickPromptSession.contextUsage(of: messages, provider: .opencode, model: nil))
+        let messages = [VitruvianCodeChatMessage(role: .user, text: String(repeating: "a", count: 400))]
+        let estimate = try XCTUnwrap(VitruvianCodeQuickPromptSession.contextUsage(of: messages, provider: .opencode, model: nil))
         XCTAssertTrue(estimate.isEstimate)
         XCTAssertEqual(estimate.totalTokens, 100)
         XCTAssertEqual(estimate.contextWindow, 200_000)
-        XCTAssertNil(NexusAgentQuickPromptSession.contextUsage(of: [], provider: .opencode, model: nil))
+        XCTAssertNil(VitruvianCodeQuickPromptSession.contextUsage(of: [], provider: .opencode, model: nil))
     }
 }

@@ -22,7 +22,7 @@ import CryptoKit
 import WebKit
 import XCTest
 
-import NexusAgentUI
+import VitruvianCodeUI
 
 /// The diagram card's page: that the app finds the copy of Mermaid it ships
 /// wherever each build puts it, that the page draws with it and reaches for
@@ -35,7 +35,7 @@ final class MermaidPageTests: XCTestCase {
     /// The folder the shipped script is in on this machine: the target's
     /// runfiles under Bazel, or beside the sources under SwiftPM and Xcode.
     private func shippedDirectory() -> URL? {
-        let relative = "apps/desktop/nexus-agent/macos/Sources/NexusAgentUI/Resources"
+        let relative = "apps/desktop/vitruvian-code/macos/Sources/VitruvianCodeUI/Resources"
         var candidates: [String] = []
         let environment = ProcessInfo.processInfo.environment
         if let runfiles = environment["TEST_SRCDIR"] {
@@ -44,13 +44,13 @@ final class MermaidPageTests: XCTestCase {
             }
         }
         let here = (#filePath as NSString).deletingLastPathComponent
-        candidates.append((here as NSString).deletingLastPathComponent + "/Sources/NexusAgentUI/Resources")
+        candidates.append((here as NSString).deletingLastPathComponent + "/Sources/VitruvianCodeUI/Resources")
         return candidates.first { FileManager.default.fileExists(atPath: $0) }.map { URL(fileURLWithPath: $0) }
     }
 
     private func shippedScript() throws -> String {
         let directory = try XCTUnwrap(shippedDirectory(), "the folder of shipped resources is found")
-        return try XCTUnwrap(NexusAgentMermaidPage.script(in: [directory]), "the shipped copy of Mermaid is read")
+        return try XCTUnwrap(VitruvianCodeMermaidPage.script(in: [directory]), "the shipped copy of Mermaid is read")
     }
 
     /// The file is `dist/mermaid.min.js` from the npm package of the version
@@ -58,7 +58,7 @@ final class MermaidPageTests: XCTestCase {
     /// line and that file together.
     func testTheShippedCopyIsTheOneTheNoticeNames() throws {
         let directory = try XCTUnwrap(shippedDirectory())
-        let url = try XCTUnwrap(NexusAgentMermaidPage.scriptURL(in: [directory]))
+        let url = try XCTUnwrap(VitruvianCodeMermaidPage.scriptURL(in: [directory]))
         let digest = SHA256.hash(data: try Data(contentsOf: url)).map { String(format: "%02x", $0) }.joined()
         XCTAssertEqual(digest, "581ed7d74bd9048d0e3a91363927d72ef22942d7722546b27f7cc29e35390eb8")
     }
@@ -99,7 +99,7 @@ final class MermaidPageTests: XCTestCase {
     }
 
     private func found(in bundle: Bundle) -> String? {
-        NexusAgentMermaidPage.script(in: NexusAgentMermaidPage.scriptDirectories(for: bundle))
+        VitruvianCodeMermaidPage.script(in: VitruvianCodeMermaidPage.scriptDirectories(for: bundle))
     }
 
     func testFoundWhereBazelPutsIt() throws {
@@ -107,20 +107,20 @@ final class MermaidPageTests: XCTestCase {
     }
 
     func testFoundWhereTheReleaseScriptPutsIt() throws {
-        let bundle = try app(["Resources/NexusAgent_NexusAgentUI.bundle/mermaid.min.js": "swiftpm"])
+        let bundle = try app(["Resources/VitruvianCode_VitruvianCodeUI.bundle/mermaid.min.js": "swiftpm"])
         XCTAssertEqual(found(in: bundle), "swiftpm")
     }
 
     /// SwiftPM's newer build engine gives the folder a bundle's own layout.
     func testFoundInAResourceBundleWithContents() throws {
-        let bundle = try app(["Resources/NexusAgent_NexusAgentUI.bundle/Contents/Resources/mermaid.min.js": "nested"])
+        let bundle = try app(["Resources/VitruvianCode_VitruvianCodeUI.bundle/Contents/Resources/mermaid.min.js": "nested"])
         XCTAssertEqual(found(in: bundle), "nested")
     }
 
     /// `swift run`: no app, the resource folder sits beside the executable.
     func testFoundBesideAnExecutableThatIsNotPackaged() throws {
         let directory = scratch.appendingPathComponent("debug", isDirectory: true)
-        let resources = directory.appendingPathComponent(NexusAgentMermaidPage.swiftPMResourceBundleName)
+        let resources = directory.appendingPathComponent(VitruvianCodeMermaidPage.swiftPMResourceBundleName)
         try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
         try "beside".write(to: resources.appendingPathComponent("mermaid.min.js"), atomically: true, encoding: .utf8)
         XCTAssertEqual(found(in: try XCTUnwrap(Bundle(url: directory))), "beside")
@@ -128,10 +128,10 @@ final class MermaidPageTests: XCTestCase {
 
     func testAnAppWithoutTheScriptFindsNone() throws {
         let bundle = try app(["Resources/AppIcon.icns": "icon"])
-        XCTAssertFalse(NexusAgentMermaidPage.scriptDirectories(for: bundle).isEmpty, "there were places to look")
-        XCTAssertNil(NexusAgentMermaidPage.scriptURL(in: NexusAgentMermaidPage.scriptDirectories(for: bundle)))
+        XCTAssertFalse(VitruvianCodeMermaidPage.scriptDirectories(for: bundle).isEmpty, "there were places to look")
+        XCTAssertNil(VitruvianCodeMermaidPage.scriptURL(in: VitruvianCodeMermaidPage.scriptDirectories(for: bundle)))
         XCTAssertNil(found(in: bundle))
-        XCTAssertNil(NexusAgentMermaidPage.script(in: []))
+        XCTAssertNil(VitruvianCodeMermaidPage.script(in: []))
     }
 
     func testAnEmptyOrUnreadableScriptCountsAsMissing() throws {
@@ -149,11 +149,11 @@ final class MermaidPageTests: XCTestCase {
     /// The app `scripts/bundle.sh` assembled from a real SwiftPM build.
     /// `mirror_build_test` names it; without that this has nothing to look at.
     func testFoundInTheAppTheReleaseScriptAssembled() throws {
-        guard let path = ProcessInfo.processInfo.environment["NEXUS_AGENT_PACKAGED_APP"], !path.isEmpty else {
-            throw XCTSkip("NEXUS_AGENT_PACKAGED_APP is not set: no packaged app to check")
+        guard let path = ProcessInfo.processInfo.environment["VITRUVIAN_CODE_PACKAGED_APP"], !path.isEmpty else {
+            throw XCTSkip("VITRUVIAN_CODE_PACKAGED_APP is not set: no packaged app to check")
         }
         let bundle = try XCTUnwrap(Bundle(url: URL(fileURLWithPath: path)), "\(path) is an app")
-        let url = try XCTUnwrap(NexusAgentMermaidPage.scriptURL(in: NexusAgentMermaidPage.scriptDirectories(for: bundle)),
+        let url = try XCTUnwrap(VitruvianCodeMermaidPage.scriptURL(in: VitruvianCodeMermaidPage.scriptDirectories(for: bundle)),
                                 "the packaged app has the script where the lookup tries")
         print("packaged app: found \(url.path)")
         XCTAssertEqual(found(in: bundle), try shippedScript(), "and it is the shipped copy")
@@ -163,7 +163,7 @@ final class MermaidPageTests: XCTestCase {
 
     func testThePageNamesNothingOutsideItself() {
         for isDark in [false, true] {
-            let html = NexusAgentMermaidPage.html(source: "graph TD\nA --> B", isDark: isDark, errorScheme: "sample-error")
+            let html = VitruvianCodeMermaidPage.html(source: "graph TD\nA --> B", isDark: isDark, errorScheme: "sample-error")
             XCTAssertFalse(html.contains("http://"), "no address to load from")
             XCTAssertFalse(html.contains("https://"), "no address to load from")
             XCTAssertFalse(html.lowercased().contains("<script"), "the page carries no script of its own")
@@ -174,13 +174,13 @@ final class MermaidPageTests: XCTestCase {
             XCTAssertTrue(html.contains("data-theme=\"\(isDark ? "dark" : "default")\""))
             XCTAssertTrue(html.contains("data-error-url=\"sample-error://error\""))
         }
-        XCTAssertFalse(NexusAgentMermaidPage.contentSecurityPolicy.contains("script-src"),
+        XCTAssertFalse(VitruvianCodeMermaidPage.contentSecurityPolicy.contains("script-src"),
                        "the policy lets no script source in, so the default refuses them all")
     }
 
     func testADiagramsSourceIsNeverMarkup() {
         let hostile = "graph TD\nA[\"</div><script>alert(1)</script><img src=x onerror=alert(2)>\"] --> B & C"
-        let html = NexusAgentMermaidPage.html(source: hostile, isDark: false, errorScheme: "x\"><script>")
+        let html = VitruvianCodeMermaidPage.html(source: hostile, isDark: false, errorScheme: "x\"><script>")
         XCTAssertFalse(html.contains("<script"))
         XCTAssertFalse(html.contains("<img"))
         XCTAssertTrue(html.contains("&lt;/div&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;img src=x onerror=alert(2)&gt;"))
@@ -189,8 +189,8 @@ final class MermaidPageTests: XCTestCase {
     }
 
     func testThePageGoesNowhereButItsErrorAddress() {
-        func decision(_ address: String, scheme: String = "sample-error") -> NexusAgentMermaidPage.Navigation {
-            NexusAgentMermaidPage.navigation(to: URL(string: address), errorScheme: scheme)
+        func decision(_ address: String, scheme: String = "sample-error") -> VitruvianCodeMermaidPage.Navigation {
+            VitruvianCodeMermaidPage.navigation(to: URL(string: address), errorScheme: scheme)
         }
         XCTAssertEqual(decision("about:blank"), .allow)
         XCTAssertEqual(decision("sample-error://error"), .renderError)
@@ -200,7 +200,7 @@ final class MermaidPageTests: XCTestCase {
                           "other-error://error", "javascript:alert(1)", "data:text/html,hello"] {
             XCTAssertEqual(decision(elsewhere), .refuse, elsewhere)
         }
-        XCTAssertEqual(NexusAgentMermaidPage.navigation(to: nil, errorScheme: "sample-error"), .refuse)
+        XCTAssertEqual(VitruvianCodeMermaidPage.navigation(to: nil, errorScheme: "sample-error"), .refuse)
     }
 
     // MARK: - Drawing, in a web view that is never put on screen
@@ -211,16 +211,16 @@ final class MermaidPageTests: XCTestCase {
     @MainActor
     private final class Page {
         let webView: WKWebView
-        let delegate: NexusAgentMermaidNavigationDelegate
+        let delegate: VitruvianCodeMermaidNavigationDelegate
         private(set) var errors = 0
 
         init(script: String?, source: String, isDark: Bool) {
-            webView = NexusAgentMermaidPage.makeWebView(script: script)
+            webView = VitruvianCodeMermaidPage.makeWebView(script: script)
             webView.frame = NSRect(x: 0, y: 0, width: 640, height: 420)
-            delegate = NexusAgentMermaidNavigationDelegate(errorScheme: "sample-error", onRenderError: {})
+            delegate = VitruvianCodeMermaidNavigationDelegate(errorScheme: "sample-error", onRenderError: {})
             webView.navigationDelegate = delegate
             delegate.onRenderError = { [weak self] in self?.errors += 1 }
-            NexusAgentMermaidPage.load(source: source, isDark: isDark, errorScheme: "sample-error", in: webView)
+            VitruvianCodeMermaidPage.load(source: source, isDark: isDark, errorScheme: "sample-error", in: webView)
         }
 
         /// Runs the main run loop until `done` or the time is up.
@@ -355,7 +355,7 @@ final class MermaidPageTests: XCTestCase {
 
     @MainActor
     func testAMissingScriptEndsInTheErrorState() throws {
-        let missing = NexusAgentMermaidPage.script(in: [scratch.appendingPathComponent("nowhere")])
+        let missing = VitruvianCodeMermaidPage.script(in: [scratch.appendingPathComponent("nowhere")])
         XCTAssertNil(missing)
         let page = Page(script: missing, source: Self.flowchart, isDark: false)
         XCTAssertTrue(page.wait { page.errors > 0 || page.hasDrawing })

@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/annotations.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/annotations.js`.
 //! Reads Antigravity conversation annotations (`annotations/<id>.pbtxt`) to
 //! determine which conversations the user marked as archived.
 

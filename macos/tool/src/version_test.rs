@@ -21,16 +21,16 @@
 //! The tool's version is the app's, in every file that says it.
 //!
 //! Checks vitruvian-tool.json version is X.Y.Z, matches
-//! Sources/NexusAgentToolCore/Version.swift and
-//! Sources/NexusAgent/Version.swift, checks release-please-config.json
+//! Sources/VitruvianCodeToolCore/Version.swift and
+//! Sources/VitruvianCode/Version.swift, checks release-please-config.json
 //! extra-files includes the tool's paths, and checks Package.swift
 //! vitruvian-sdk >= 1.9.0.
 
 use std::fs;
 use std::path::PathBuf;
 
-const PKG: &str = "apps/desktop/nexus-agent/macos";
-const APP: &str = "apps/desktop/nexus-agent";
+const PKG: &str = "apps/desktop/vitruvian-code/macos";
+const APP: &str = "apps/desktop/vitruvian-code";
 
 const KIT_THE_TOOL_NEEDS: (u32, u32, u32) = (1, 9, 0);
 
@@ -98,11 +98,11 @@ fn tool_version_matches_app() {
         .to_string();
 
     let tool_version = version_line(&rlocation(&format!(
-        "{}/Sources/NexusAgentToolCore/Version.swift",
+        "{}/Sources/VitruvianCodeToolCore/Version.swift",
         PKG
     )));
     let app_version = version_line(&rlocation(&format!(
-        "{}/Sources/NexusAgent/Version.swift",
+        "{}/Sources/VitruvianCode/Version.swift",
         PKG
     )));
 
@@ -153,7 +153,7 @@ fn tool_version_matches_app() {
 
     for needed in &[
         "macos/tool/vitruvian-tool.json",
-        "macos/Sources/NexusAgentToolCore/Version.swift",
+        "macos/Sources/VitruvianCodeToolCore/Version.swift",
     ] {
         if !extra_files.iter().any(|f| f == needed) {
             problems.push(format!(
@@ -211,7 +211,7 @@ fn test_semver_parsing() {
 #[test]
 fn test_version_line_extraction() {
     let content = r#"let version = "1.2.3" // x-release-please-version"#;
-    let dir = std::env::temp_dir().join("nexus-version-test");
+    let dir = std::env::temp_dir().join("vitruvian-code-version-test");
     let _ = fs::create_dir_all(&dir);
     let path = dir.join("Version.swift");
     fs::write(&path, content).unwrap();

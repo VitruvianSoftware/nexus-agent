@@ -19,18 +19,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/shared-cases.test.js`.
-//! Reads every shared cross-platform fixture in `apps/desktop/nexus-agent/testdata/*.json`
+//! Native Rust port of `apps/desktop/vitruvian-code/src/shared-cases.test.js`.
+//! Reads every shared cross-platform fixture in `apps/desktop/vitruvian-code/testdata/*.json`
 //! and verifies the Rust bridge, dotenv parser, and flag builder against them.
 
-use nexus_agent_src_lib::agy::{approval_args, build_agy_args, AgyBridge};
-use nexus_agent_src_lib::annotations::annotation_is_archived;
-use nexus_agent_src_lib::{dotenv_encode_value, dotenv_parse, JsonValue};
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vitruvian_code_src_lib::agy::{approval_args, build_agy_args, AgyBridge};
+use vitruvian_code_src_lib::annotations::annotation_is_archived;
+use vitruvian_code_src_lib::{dotenv_encode_value, dotenv_parse, JsonValue};
 
 fn make_scratch_dir(prefix: &str) -> PathBuf {
     let nanos = SystemTime::now()
@@ -43,7 +43,7 @@ fn make_scratch_dir(prefix: &str) -> PathBuf {
 }
 
 fn load_cases(file: &str) -> Vec<JsonValue> {
-    let relative = format!("apps/desktop/nexus-agent/testdata/{}", file);
+    let relative = format!("apps/desktop/vitruvian-code/testdata/{}", file);
     let mut candidates = Vec::new();
     if let Ok(srcdir) = env::var("TEST_SRCDIR") {
         if let Ok(ws) = env::var("TEST_WORKSPACE") {
@@ -115,7 +115,7 @@ fn archive_annotations_the_bot_reads_every_shared_example_as_written() {
 
 #[test]
 fn approval_modes_the_bot_passes_agy_the_flags_every_shared_example_says() {
-    let scratch = make_scratch_dir("nexus-shared-approval");
+    let scratch = make_scratch_dir("vitruvian-code-shared-approval");
     let bridge = AgyBridge::from_dotenv_and_env("", &BTreeMap::new(), &scratch.to_string_lossy());
     let when_absent = bridge.get_chat_settings(0).approval_mode;
 
@@ -150,7 +150,7 @@ fn approval_modes_the_bot_passes_agy_the_flags_every_shared_example_says() {
 
 #[test]
 fn approval_modes_an_empty_agy_approval_mode_in_environment_gives_flags_of_empty_example() {
-    let scratch = make_scratch_dir("nexus-shared-empty-mode");
+    let scratch = make_scratch_dir("vitruvian-code-shared-empty-mode");
     let cases = load_cases("approval-modes.json");
     let empty: Vec<&JsonValue> = cases
         .iter()
@@ -304,7 +304,7 @@ fn start_bot_flags(
 
 #[test]
 fn agy_flags_the_bot_started_over_each_shared_env_passes_agy_the_flags_the_example_says() {
-    let scratch = make_scratch_dir("nexus-shared-flags-file");
+    let scratch = make_scratch_dir("vitruvian-code-shared-flags-file");
     let cases: Vec<JsonValue> = load_cases("agy-flags.json")
         .into_iter()
         .filter(|item| item.get("environment").is_none() && item.get("custom").is_none())
@@ -346,7 +346,7 @@ fn agy_flags_the_bot_started_over_each_shared_env_passes_agy_the_flags_the_examp
 
 #[test]
 fn agy_flags_variable_already_set_in_process_wins_over_same_line_of_env() {
-    let scratch = make_scratch_dir("nexus-shared-flags-env");
+    let scratch = make_scratch_dir("vitruvian-code-shared-flags-env");
     let cases: Vec<JsonValue> = load_cases("agy-flags.json")
         .into_iter()
         .filter(|item| item.get("environment").is_some())
@@ -398,7 +398,7 @@ fn agy_flags_variable_already_set_in_process_wins_over_same_line_of_env() {
 
 #[test]
 fn agy_flags_command_of_users_own_is_run_as_written_with_no_effort_flag_added() {
-    let scratch = make_scratch_dir("nexus-shared-flags-custom");
+    let scratch = make_scratch_dir("vitruvian-code-shared-flags-custom");
     let cases: Vec<JsonValue> = load_cases("agy-flags.json")
         .into_iter()
         .filter(|item| item.get("custom").is_some())

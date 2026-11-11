@@ -19,11 +19,11 @@
 // SOFTWARE.
 
 import AppKit
-import NexusAgentCore
+import VitruvianCodeCore
 import SwiftUI
 import XCTest
 
-@testable import NexusAgentUI
+@testable import VitruvianCodeUI
 
 /// The popped-out chat keeps the notch's look: the island's dark glass, a
 /// black shade over Liquid Glass that lets a little of the desktop through
@@ -33,12 +33,12 @@ final class NotchBackdropTests: XCTestCase {
     private static let size = CGSize(width: 520, height: 300)
 
     func testTheShadeIsTheIslandsNearSolidAtTheTopAndThinnerAtTheLip() {
-        XCTAssertEqual(NexusAgentNotchBackdrop.shadeOpacity(at: 0, increasedContrast: false), 1, accuracy: 0.001)
-        XCTAssertEqual(NexusAgentNotchBackdrop.shadeOpacity(at: 1, increasedContrast: false), 0.55, accuracy: 0.001,
+        XCTAssertEqual(VitruvianCodeNotchBackdrop.shadeOpacity(at: 0, increasedContrast: false), 1, accuracy: 0.001)
+        XCTAssertEqual(VitruvianCodeNotchBackdrop.shadeOpacity(at: 1, increasedContrast: false), 0.55, accuracy: 0.001,
                        "the glass shows through at the bottom, as under the island's lip")
-        XCTAssertGreaterThan(NexusAgentNotchBackdrop.shadeOpacity(at: 0.5, increasedContrast: false), 0.9,
+        XCTAssertGreaterThan(VitruvianCodeNotchBackdrop.shadeOpacity(at: 0.5, increasedContrast: false), 0.9,
                              "the middle, where the messages are, stays dark")
-        XCTAssertGreaterThanOrEqual(NexusAgentNotchBackdrop.shadeOpacity(at: 1, increasedContrast: true), 0.9,
+        XCTAssertGreaterThanOrEqual(VitruvianCodeNotchBackdrop.shadeOpacity(at: 1, increasedContrast: true), 0.9,
                                     "increased contrast keeps the surface almost solid")
     }
 
@@ -53,10 +53,10 @@ final class NotchBackdropTests: XCTestCase {
     func testTheTintOverTheGlassThinsTowardTheBottom() {
         // The glass itself only draws on screen; what is checked here is the
         // shade laid over it, which is the same everywhere.
-        let stops = NexusAgentNotchBackdrop.shade(increasedContrast: false)
+        let stops = VitruvianCodeNotchBackdrop.shade(increasedContrast: false)
         XCTAssertEqual(stops.first?.location, 0)
         XCTAssertEqual(stops.last?.location, 1)
-        let opacities = stops.map { NexusAgentNotchBackdrop.shadeOpacity(at: $0.location, increasedContrast: false) }
+        let opacities = stops.map { VitruvianCodeNotchBackdrop.shadeOpacity(at: $0.location, increasedContrast: false) }
         XCTAssertEqual(opacities, opacities.sorted(by: >), "never darker further down")
         XCTAssertLessThan(opacities.last ?? 1, 0.8, "not an opaque slab: the glass shows through at the bottom")
     }
@@ -71,14 +71,14 @@ final class NotchBackdropTests: XCTestCase {
     @MainActor
     private func render(reduceTransparency: Bool, name: String) throws -> NSBitmapImageRep {
         let messages = [
-            NexusAgentChatMessage(role: .user, text: "Why does the release build fail on Intel Macs?"),
-            NexusAgentChatMessage(role: .agent, text: "The universal build links an **arm64-only** copy of `libsqlite`."),
+            VitruvianCodeChatMessage(role: .user, text: "Why does the release build fail on Intel Macs?"),
+            VitruvianCodeChatMessage(role: .agent, text: "The universal build links an **arm64-only** copy of `libsqlite`."),
         ]
         let view = ZStack(alignment: .top) {
-            NexusAgentNotchBackdrop(reduceTransparencyOverride: reduceTransparency)
+            VitruvianCodeNotchBackdrop(reduceTransparencyOverride: reduceTransparency)
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(messages) { message in
-                    NexusAgentMessageBubble(message: message, strings: NexusAgentChatStrings(), errorScheme: "x-test")
+                    VitruvianCodeMessageBubble(message: message, strings: VitruvianCodeChatStrings(), errorScheme: "x-test")
                 }
             }
             .padding(14)

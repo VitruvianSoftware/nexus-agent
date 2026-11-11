@@ -19,18 +19,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/sessions.test.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/sessions.test.js`.
 
-use nexus_agent_src_lib::sessions::{
-    delete_persisted_session, delete_workspace, get_persisted_session, get_session_name,
-    get_workspaces, has_persisted_session, set_persisted_session, set_session_name, set_workspace,
-    SessionStore,
-};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vitruvian_code_src_lib::sessions::{
+    delete_persisted_session, delete_workspace, get_persisted_session, get_session_name,
+    get_workspaces, has_persisted_session, set_persisted_session, set_session_name, set_workspace,
+    SessionStore,
+};
 
 static ENV_LOCK: Mutex<()> = Mutex::new(());
 
@@ -39,7 +39,11 @@ fn setup_temp_workdir() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = env::temp_dir().join(format!("nexus-sessions-{}-{}", std::process::id(), nanos));
+    let dir = env::temp_dir().join(format!(
+        "vitruvian-code-sessions-{}-{}",
+        std::process::id(),
+        nanos
+    ));
     fs::create_dir_all(&dir).unwrap();
     env::remove_var("AGY_WORKING_DIR");
     env::set_var("GEMINI_WORKING_DIR", &dir);

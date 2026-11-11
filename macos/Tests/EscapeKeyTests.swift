@@ -20,7 +20,7 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// What Esc does in a window that shows the chat. Each app's window takes
 /// the key before the chat's views see it and asks the session
@@ -29,7 +29,7 @@ import NexusAgentCore
 /// only a press with neither is the window's.
 @MainActor
 final class EscapeKeyTests: XCTestCase {
-    private typealias Key = NexusAgentEscapeKey
+    private typealias Key = VitruvianCodeEscapeKey
 
     // MARK: - The rule
 
@@ -49,19 +49,19 @@ final class EscapeKeyTests: XCTestCase {
 
     // MARK: - The session doing it
 
-    private final class QuietHost: NexusAgentHost {
+    private final class QuietHost: VitruvianCodeHost {
         var configuredBotDirectory = ""
         var startsBotAtLaunch = false
         var planMode = false
         var hiddenClaudeSessionIDs: [String] = []
         var chosenProviderID: UUID?
-        var savedProviders: [NexusAgentCLIProvider] = []
+        var savedProviders: [VitruvianCodeCLIProvider] = []
         var promptHistory: [String] = []
         var worktreeMode = false
         var timelineOnLeft = false
-        var strings = NexusAgentHostStrings()
-        func turnNeedsApproval(_ notice: NexusAgentTurnNotice) {}
-        func turnFinished(_ notice: NexusAgentTurnNotice, isChatVisible: Bool) {}
+        var strings = VitruvianCodeHostStrings()
+        func turnNeedsApproval(_ notice: VitruvianCodeTurnNotice) {}
+        func turnFinished(_ notice: VitruvianCodeTurnNotice, isChatVisible: Bool) {}
     }
 
     /// An agent that is started and never answers, so a turn stays in
@@ -71,9 +71,9 @@ final class EscapeKeyTests: XCTestCase {
         var terminations = 0
         var agentExit: (@MainActor @Sendable (Int32) -> Void)?
 
-        var environment: NexusAgentEngine.Environment {
-            NexusAgentEngine.Environment(
-                defaults: ScratchDefaults.suite(named: "com.vitruviansoftware.nexus-agent.tests.unused")!,
+        var environment: VitruvianCodeEngine.Environment {
+            VitruvianCodeEngine.Environment(
+                defaults: ScratchDefaults.suite(named: "com.vitruviansoftware.vitruvian-code.tests.unused")!,
                 home: "/Users/rig",
                 processEnvironment: ["PATH": "/usr/bin"],
                 stateDirectory: "/Users/rig/state",
@@ -90,23 +90,23 @@ final class EscapeKeyTests: XCTestCase {
                 openFile: { _ in },
                 launchAgent: { [unowned self] _, _, _, _, _, onExit in
                     agentExit = onExit
-                    return NexusAgentRunningAgent(terminate: { [unowned self] in terminations += 1 })
+                    return VitruvianCodeRunningAgent(terminate: { [unowned self] in terminations += 1 })
                 },
                 listSessions: { _, _, _ in [] })
         }
     }
 
     /// A session with a reply in flight in the conversation on show.
-    private func sessionWithAReplyInFlight(_ world: World) -> NexusAgentQuickPromptSession {
-        let session = NexusAgentQuickPromptSession(environment: world.environment, host: QuietHost())
-        session.send("go on", configuration: NexusAgentConfiguration(model: "m1"), agentPath: "/fake/agy")
+    private func sessionWithAReplyInFlight(_ world: World) -> VitruvianCodeQuickPromptSession {
+        let session = VitruvianCodeQuickPromptSession(environment: world.environment, host: QuietHost())
+        session.send("go on", configuration: VitruvianCodeConfiguration(model: "m1"), agentPath: "/fake/agy")
         XCTAssertTrue(session.isRunning)
         XCTAssertEqual(session.mode, .chat)
         return session
     }
 
     /// Ends the turn as a stopped agent does, and the timers with it.
-    private func end(_ session: NexusAgentQuickPromptSession, _ world: World) {
+    private func end(_ session: VitruvianCodeQuickPromptSession, _ world: World) {
         world.agentExit?(15)
         session.stopTranscriptFollower()
     }
@@ -143,7 +143,7 @@ final class EscapeKeyTests: XCTestCase {
     }
 
     func testEscWithNothingOpenAndNothingRunningIsTheWindows() {
-        let session = NexusAgentQuickPromptSession(environment: World().environment, host: QuietHost())
+        let session = VitruvianCodeQuickPromptSession(environment: World().environment, host: QuietHost())
         XCTAssertFalse(session.cancelInlineEditing(), "there is no editor to close")
         XCTAssertEqual(session.pressEscape(stoppingReply: true), .dismiss)
         XCTAssertEqual(session.mode, .compact)
@@ -156,7 +156,7 @@ final class EscapeKeyTests: XCTestCase {
         let world = World()
         let session = sessionWithAReplyInFlight(world)
         defer { end(session, world) }
-        session.toggleSessions(configuration: NexusAgentConfiguration())
+        session.toggleSessions(configuration: VitruvianCodeConfiguration())
         XCTAssertEqual(session.mode, .sessions)
 
         XCTAssertEqual(session.pressEscape(stoppingReply: true), .dismiss)
@@ -182,7 +182,7 @@ final class EscapeKeyTests: XCTestCase {
     }
 
     func testCancellingClosesAnOpenEditorOnce() {
-        let session = NexusAgentQuickPromptSession(environment: World().environment, host: QuietHost())
+        let session = VitruvianCodeQuickPromptSession(environment: World().environment, host: QuietHost())
         session.isEditingModel = true
         XCTAssertTrue(session.cancelInlineEditing())
         XCTAssertFalse(session.isEditingModel)

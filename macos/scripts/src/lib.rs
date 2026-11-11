@@ -310,7 +310,7 @@ mod tests {
         fs::write(&exe, b"fake-executable").unwrap();
         fs::set_permissions(&exe, fs::Permissions::from_mode(0o755)).unwrap();
 
-        let ui_bundle = exe_dir.join("NexusAgent_NexusAgentUI.bundle");
+        let ui_bundle = exe_dir.join("VitruvianCode_VitruvianCodeUI.bundle");
         fs::create_dir_all(&ui_bundle).unwrap();
         fs::write(ui_bundle.join("mermaid.min.js"), b"mermaid").unwrap();
 
@@ -364,7 +364,7 @@ mod tests {
         let app = dir.join("NexusAgent.app");
         let contents = app.join("Contents");
         let resources = contents.join("Resources");
-        let ui_bundle = resources.join("NexusAgent_NexusAgentUI.bundle");
+        let ui_bundle = resources.join("VitruvianCode_VitruvianCodeUI.bundle");
         fs::create_dir_all(&ui_bundle).unwrap();
         fs::create_dir_all(contents.join("MacOS")).unwrap();
 

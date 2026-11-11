@@ -20,7 +20,7 @@
 
 import CoreGraphics
 import Foundation
-import NexusAgentCore
+import VitruvianCodeCore
 import XCTest
 
 @MainActor
@@ -55,7 +55,7 @@ final class OrcaDiffAndDesignModeTests: XCTestCase {
          let maxRetries = 3
         """
 
-        let files = NexusAgentDiffParser.parseUnifiedDiff(sampleDiff)
+        let files = VitruvianCodeDiffParser.parseUnifiedDiff(sampleDiff)
         XCTAssertEqual(files.count, 2)
 
         let first = files[0]
@@ -93,7 +93,7 @@ final class OrcaDiffAndDesignModeTests: XCTestCase {
     // MARK: - Diff Annotations & Review Batch Composition
 
     func testDiffReviewSessionAnnotationsAndBatchPrompt() {
-        let session = NexusAgentDiffReviewSession()
+        let session = VitruvianCodeDiffReviewSession()
         session.loadDiff(
             """
             diff --git a/Sources/Server.swift b/Sources/Server.swift
@@ -178,7 +178,7 @@ final class OrcaDiffAndDesignModeTests: XCTestCase {
         }
         """
 
-        let capture = NexusAgentDesignModeScript.parseCapture(
+        let capture = VitruvianCodeDesignModeScript.parseCapture(
             fromJSON: rawJSON,
             pageURL: "http://localhost:3000/dashboard"
         )
@@ -188,7 +188,7 @@ final class OrcaDiffAndDesignModeTests: XCTestCase {
         XCTAssertEqual(capture?.sourceLocation, "src/components/Header.tsx:42")
         XCTAssertEqual(capture?.boundingBox, CGRect(x: 240, y: 18, width: 128, height: 36))
 
-        let formatted = NexusAgentDesignModeScript.formatPromptAttachment(
+        let formatted = VitruvianCodeDesignModeScript.formatPromptAttachment(
             for: [capture].compactMap { $0 }
         )
         XCTAssertTrue(formatted.contains("`<button>` (`header.nav > button.cta-primary:nth-of-type(1)`)"))
@@ -202,17 +202,17 @@ final class OrcaDiffAndDesignModeTests: XCTestCase {
     // MARK: - Rich Workspace Previews & Notes
 
     func testPreviewKindClassificationAndWorkspaceNoteStore() {
-        XCTAssertEqual(NexusAgentPreviewKind.classify(path: "/repo/docs/README.md"), .markdown)
-        XCTAssertEqual(NexusAgentPreviewKind.classify(path: "architecture.mmd"), .mermaid)
-        XCTAssertEqual(NexusAgentPreviewKind.classify(path: "index.html"), .html)
-        XCTAssertEqual(NexusAgentPreviewKind.classify(path: "spec.pdf"), .pdf)
-        XCTAssertEqual(NexusAgentPreviewKind.classify(path: "assets/mockup.png"), .image)
-        XCTAssertEqual(NexusAgentPreviewKind.classify(path: "Sources/main.swift"), .code)
+        XCTAssertEqual(VitruvianCodePreviewKind.classify(path: "/repo/docs/README.md"), .markdown)
+        XCTAssertEqual(VitruvianCodePreviewKind.classify(path: "architecture.mmd"), .mermaid)
+        XCTAssertEqual(VitruvianCodePreviewKind.classify(path: "index.html"), .html)
+        XCTAssertEqual(VitruvianCodePreviewKind.classify(path: "spec.pdf"), .pdf)
+        XCTAssertEqual(VitruvianCodePreviewKind.classify(path: "assets/mockup.png"), .image)
+        XCTAssertEqual(VitruvianCodePreviewKind.classify(path: "Sources/main.swift"), .code)
 
         nonisolated(unsafe) var files: [String: String] = [
             "/workspace/feature-a/PLAN.md": "- [ ] Wire diff parser\n- [ ] Add tests"
         ]
-        let store = NexusAgentWorkspaceNoteStore(
+        let store = VitruvianCodeWorkspaceNoteStore(
             worktreePath: "/workspace/feature-a/",
             readFile: { path in files[path] },
             writeFile: { path, content in
@@ -248,13 +248,13 @@ final class OrcaDiffAndDesignModeTests: XCTestCase {
         +let newVal = 2
          let unchanged = 3
         """
-        let files = NexusAgentDiffParser.parseUnifiedDiff(diffWithSpaces)
+        let files = VitruvianCodeDiffParser.parseUnifiedDiff(diffWithSpaces)
         XCTAssertEqual(files.count, 1)
         XCTAssertEqual(files[0].oldPath, "Sources/My App/Auth Service.swift")
         XCTAssertEqual(files[0].newPath, "Sources/My App/Auth Service.swift")
         XCTAssertEqual(files[0].displayPath, "Sources/My App/Auth Service.swift")
 
-        let session = NexusAgentDiffReviewSession()
+        let session = VitruvianCodeDiffReviewSession()
         session.loadDiff(diffWithSpaces)
         let lines = session.files[0].hunks[0].lines
         let deletedLine = lines[1]

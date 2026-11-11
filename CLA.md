@@ -6,7 +6,7 @@
 > substitute its own preferred CLA text and entity name) before treating it as
 > a binding agreement.
 
-Thank you for your interest in contributing to **nexus-agent**, a project of
+Thank you for your interest in contributing to **Vitruvian Code**, a project of
 **VitruvianSoftware** ("the Project"). This Contributor License Agreement
 ("Agreement") clarifies the intellectual-property license granted with
 Contributions from any person.

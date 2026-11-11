@@ -22,31 +22,31 @@
 import Foundation
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 final class OrcaOrchestrationAndAutomationTests: XCTestCase {
 
     // MARK: - Hibernation: the eight safety checks
 
     /// A session that passes every check.
-    private func sleepy() -> NexusAgentHibernationCandidate {
-        NexusAgentHibernationCandidate(sessionID: "s-1", providerRoute: .claude, isTurnDone: true,
+    private func sleepy() -> VitruvianCodeHibernationCandidate {
+        VitruvianCodeHibernationCandidate(sessionID: "s-1", providerRoute: .claude, isTurnDone: true,
                                        isForeground: false, idleSeconds: 1800, hasPendingApproval: false,
                                        activeSubagentCount: 0, hasUnsettledOrchestrationDispatch: false,
                                        isDrivenByMobile: false, scrollOffsetY: 412.5)
     }
 
     func testASessionPassingAllEightChecksHibernates() {
-        let evaluator = NexusAgentHibernationEvaluator()
+        let evaluator = VitruvianCodeHibernationEvaluator()
         XCTAssertEqual(evaluator.idleThreshold, 1800)
-        XCTAssertEqual(NexusAgentHibernationEvaluator.Check.allCases.count, 8)
+        XCTAssertEqual(VitruvianCodeHibernationEvaluator.Check.allCases.count, 8)
         XCTAssertEqual(evaluator.failedChecks(sleepy()), [])
         XCTAssertTrue(evaluator.canHibernate(sleepy()))
     }
 
     func testFailingAnySingleCheckKeepsTheSessionAwake() {
-        typealias Check = NexusAgentHibernationEvaluator.Check
-        let breakers: [(Check, (inout NexusAgentHibernationCandidate) -> Void)] = [
+        typealias Check = VitruvianCodeHibernationEvaluator.Check
+        let breakers: [(Check, (inout VitruvianCodeHibernationCandidate) -> Void)] = [
             (.turnDone, { $0.isTurnDone = false }),
             (.notForeground, { $0.isForeground = true }),
             (.idleLongEnough, { $0.idleSeconds = 1799 }),
@@ -57,7 +57,7 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
             (.notDrivenByMobile, { $0.isDrivenByMobile = true }),
         ]
         XCTAssertEqual(Set(breakers.map { $0.0 }), Set(Check.allCases), "every check is exercised")
-        let evaluator = NexusAgentHibernationEvaluator()
+        let evaluator = VitruvianCodeHibernationEvaluator()
         for (check, breakIt) in breakers {
             var candidate = sleepy()
             breakIt(&candidate)
@@ -67,8 +67,8 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     }
 
     func testEveryResumableProviderMayHibernate() {
-        let evaluator = NexusAgentHibernationEvaluator()
-        for route in [NexusAgentProviderRoute.claude, .ollama, .opencode, .antigravity] {
+        let evaluator = VitruvianCodeHibernationEvaluator()
+        for route in [VitruvianCodeProviderRoute.claude, .ollama, .opencode, .antigravity] {
             var candidate = sleepy()
             candidate.providerRoute = route
             XCTAssertTrue(evaluator.canHibernate(candidate), "\(route)")
@@ -78,14 +78,14 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     func testTheIdleThresholdCanBeChanged() {
         var candidate = sleepy()
         candidate.idleSeconds = 300
-        XCTAssertFalse(NexusAgentHibernationEvaluator().canHibernate(candidate))
-        XCTAssertTrue(NexusAgentHibernationEvaluator(idleThreshold: 300).canHibernate(candidate))
+        XCTAssertFalse(VitruvianCodeHibernationEvaluator().canHibernate(candidate))
+        XCTAssertTrue(VitruvianCodeHibernationEvaluator(idleThreshold: 300).canHibernate(candidate))
     }
 
     @MainActor
     func testTheManagerKeepsTheScrollOffsetAndRestoresOnFocus() {
         let asleepAt = Date(timeIntervalSince1970: 1_800_000_000)
-        let manager = NexusAgentHibernationManager(now: { asleepAt })
+        let manager = VitruvianCodeHibernationManager(now: { asleepAt })
         let provider = UUID()
 
         var busy = sleepy()
@@ -94,7 +94,7 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
         XCTAssertFalse(manager.isHibernated("s-1"))
 
         let record = manager.hibernateIfEligible(sleepy(), providerID: provider, workingDirectory: "/repo")
-        XCTAssertEqual(record, NexusAgentHibernatedSessionRecord(sessionID: "s-1", providerID: provider,
+        XCTAssertEqual(record, VitruvianCodeHibernatedSessionRecord(sessionID: "s-1", providerID: provider,
                                                                  workingDirectory: "/repo", scrollOffsetY: 412.5,
                                                                  hibernatedAt: asleepAt))
         XCTAssertTrue(manager.isHibernated("s-1"))
@@ -123,52 +123,52 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     func testPresetsFireWhenExpected() {
         // 2026-10-23 is a Friday.
         let friday = date("2026-10-23T10:15:30Z")
-        XCTAssertEqual(NexusAgentAutomationSchedule.hourly.nextFireDate(after: friday, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.hourly.nextFireDate(after: friday, calendar: utc),
                        date("2026-10-23T11:00:00Z"))
-        XCTAssertEqual(NexusAgentAutomationSchedule.daily.nextFireDate(after: friday, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.daily.nextFireDate(after: friday, calendar: utc),
                        date("2026-10-24T00:00:00Z"))
-        XCTAssertEqual(NexusAgentAutomationSchedule.weekdays9am.nextFireDate(after: friday, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.weekdays9am.nextFireDate(after: friday, calendar: utc),
                        date("2026-10-26T09:00:00Z"), "Friday after nine skips the weekend to Monday")
-        XCTAssertEqual(NexusAgentAutomationSchedule.weekdays9am.nextFireDate(after: date("2026-10-22T08:00:00Z"),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.weekdays9am.nextFireDate(after: date("2026-10-22T08:00:00Z"),
                                                                             calendar: utc),
                        date("2026-10-22T09:00:00Z"))
-        XCTAssertEqual(NexusAgentAutomationSchedule.intervalMinutes(45).nextFireDate(after: friday, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.intervalMinutes(45).nextFireDate(after: friday, calendar: utc),
                        friday.addingTimeInterval(45 * 60))
-        XCTAssertNil(NexusAgentAutomationSchedule.intervalMinutes(0).nextFireDate(after: friday, calendar: utc))
+        XCTAssertNil(VitruvianCodeAutomationSchedule.intervalMinutes(0).nextFireDate(after: friday, calendar: utc))
     }
 
     func testCronExpressionsFireWhenExpected() {
         let start = date("2026-10-23T10:15:00Z")
-        XCTAssertEqual(NexusAgentAutomationSchedule.cron("*/20 * * * *").nextFireDate(after: start, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.cron("*/20 * * * *").nextFireDate(after: start, calendar: utc),
                        date("2026-10-23T10:20:00Z"), "strictly after, never the same minute")
-        XCTAssertEqual(NexusAgentAutomationSchedule.cron("30 8 1 * *").nextFireDate(after: start, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.cron("30 8 1 * *").nextFireDate(after: start, calendar: utc),
                        date("2026-11-01T08:30:00Z"))
-        XCTAssertEqual(NexusAgentAutomationSchedule.cron("0 12 * * 0").nextFireDate(after: start, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.cron("0 12 * * 0").nextFireDate(after: start, calendar: utc),
                        date("2026-10-25T12:00:00Z"), "0 is Sunday")
-        XCTAssertEqual(NexusAgentAutomationSchedule.cron("0 12 * * 7").nextFireDate(after: start, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.cron("0 12 * * 7").nextFireDate(after: start, calendar: utc),
                        date("2026-10-25T12:00:00Z"), "and so is 7")
-        XCTAssertEqual(NexusAgentAutomationSchedule.cron("0 0 1 1 *").nextFireDate(after: start, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.cron("0 0 1 1 *").nextFireDate(after: start, calendar: utc),
                        date("2027-01-01T00:00:00Z"))
         // Both day fields restricted: either matching runs (the 1st, or a Monday).
-        XCTAssertEqual(NexusAgentAutomationSchedule.cron("0 6 1 * 1").nextFireDate(after: start, calendar: utc),
+        XCTAssertEqual(VitruvianCodeAutomationSchedule.cron("0 6 1 * 1").nextFireDate(after: start, calendar: utc),
                        date("2026-10-26T06:00:00Z"))
-        XCTAssertNil(NexusAgentAutomationSchedule.cron("0 0 30 2 *").nextFireDate(after: start, calendar: utc),
+        XCTAssertNil(VitruvianCodeAutomationSchedule.cron("0 0 30 2 *").nextFireDate(after: start, calendar: utc),
                      "February 30th never comes")
     }
 
     func testSchedulesParseAndRoundTripAsText() throws {
-        XCTAssertEqual(NexusAgentAutomationSchedule(text: "@hourly"), .hourly)
-        XCTAssertEqual(NexusAgentAutomationSchedule(text: "@daily"), .daily)
-        XCTAssertEqual(NexusAgentAutomationSchedule(text: "@weekdays9am"), .weekdays9am)
-        XCTAssertEqual(NexusAgentAutomationSchedule(text: "@every 15m"), .intervalMinutes(15))
-        XCTAssertEqual(NexusAgentAutomationSchedule(text: "5 4 * * 1-5"), .cron("5 4 * * 1-5"))
+        XCTAssertEqual(VitruvianCodeAutomationSchedule(text: "@hourly"), .hourly)
+        XCTAssertEqual(VitruvianCodeAutomationSchedule(text: "@daily"), .daily)
+        XCTAssertEqual(VitruvianCodeAutomationSchedule(text: "@weekdays9am"), .weekdays9am)
+        XCTAssertEqual(VitruvianCodeAutomationSchedule(text: "@every 15m"), .intervalMinutes(15))
+        XCTAssertEqual(VitruvianCodeAutomationSchedule(text: "5 4 * * 1-5"), .cron("5 4 * * 1-5"))
         for bad in ["", "@sometimes", "@every 0m", "60 * * * *", "* * * *", "1-0 * * * *", "*/0 * * * *"] {
-            XCTAssertNil(NexusAgentAutomationSchedule(text: bad), bad)
+            XCTAssertNil(VitruvianCodeAutomationSchedule(text: bad), bad)
         }
-        let all: [NexusAgentAutomationSchedule] = [.hourly, .daily, .weekdays9am, .intervalMinutes(30), .cron("0 9 * * 1")]
+        let all: [VitruvianCodeAutomationSchedule] = [.hourly, .daily, .weekdays9am, .intervalMinutes(30), .cron("0 9 * * 1")]
         let data = try JSONEncoder().encode(all)
-        XCTAssertEqual(try JSONDecoder().decode([NexusAgentAutomationSchedule].self, from: data), all)
-        XCTAssertEqual(String(data: try JSONEncoder().encode(NexusAgentAutomationSchedule.intervalMinutes(30)),
+        XCTAssertEqual(try JSONDecoder().decode([VitruvianCodeAutomationSchedule].self, from: data), all)
+        XCTAssertEqual(String(data: try JSONEncoder().encode(VitruvianCodeAutomationSchedule.intervalMinutes(30)),
                               encoding: .utf8), "\"@every 30m\"")
     }
 
@@ -181,13 +181,13 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
 
     @MainActor
     func testDueTasksAndMarkExecuted() {
-        let manager = NexusAgentAutomationManager(stateDirectory: temporaryDirectory(), calendar: utc)
+        let manager = VitruvianCodeAutomationManager(stateDirectory: temporaryDirectory(), calendar: utc)
         let provider = UUID()
-        let hourly = NexusAgentScheduledTask(name: "Hourly triage", prompt: "triage", workingDirectory: "/repo",
+        let hourly = VitruvianCodeScheduledTask(name: "Hourly triage", prompt: "triage", workingDirectory: "/repo",
                                              providerID: provider, schedule: .hourly)
-        let interval = NexusAgentScheduledTask(name: "Every 30", prompt: "poll", workingDirectory: "/repo",
+        let interval = VitruvianCodeScheduledTask(name: "Every 30", prompt: "poll", workingDirectory: "/repo",
                                                providerID: provider, schedule: .intervalMinutes(30))
-        let disabled = NexusAgentScheduledTask(name: "Off", prompt: "x", workingDirectory: "/repo",
+        let disabled = VitruvianCodeScheduledTask(name: "Off", prompt: "x", workingDirectory: "/repo",
                                                providerID: provider, schedule: .intervalMinutes(1), isEnabled: false)
         manager.upsert(hourly)
         manager.upsert(interval)
@@ -210,8 +210,8 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     @MainActor
     func testTasksPersistInTheStateDirectory() {
         let directory = temporaryDirectory()
-        let manager = NexusAgentAutomationManager(stateDirectory: directory, calendar: utc)
-        let task = NexusAgentScheduledTask(name: "Nightly", prompt: "summarise", workingDirectory: "/repo",
+        let manager = VitruvianCodeAutomationManager(stateDirectory: directory, calendar: utc)
+        let task = VitruvianCodeScheduledTask(name: "Nightly", prompt: "summarise", workingDirectory: "/repo",
                                            providerID: UUID(), model: "opus", useWorktree: true,
                                            schedule: .cron("0 2 * * *"))
         manager.upsert(task)
@@ -219,20 +219,20 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
         XCTAssertNil(manager.lastError)
         XCTAssertTrue(FileManager.default.fileExists(atPath: manager.fileURL.path))
 
-        let reloaded = NexusAgentAutomationManager(stateDirectory: directory, calendar: utc)
+        let reloaded = VitruvianCodeAutomationManager(stateDirectory: directory, calendar: utc)
         XCTAssertEqual(reloaded.tasks, manager.tasks)
         reloaded.setEnabled(false, id: task.id)
         reloaded.remove(id: task.id)
-        XCTAssertEqual(NexusAgentAutomationManager(stateDirectory: directory).tasks, [])
+        XCTAssertEqual(VitruvianCodeAutomationManager(stateDirectory: directory).tasks, [])
     }
 
     @MainActor
     func testLaunchdPlistXML() throws {
-        let manager = NexusAgentAutomationManager(stateDirectory: temporaryDirectory(), calendar: utc)
+        let manager = VitruvianCodeAutomationManager(stateDirectory: temporaryDirectory(), calendar: utc)
         let id = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
-        let weekdays = NexusAgentScheduledTask(id: id, name: "Standup", prompt: "p", workingDirectory: "/Users/me/R&D",
+        let weekdays = VitruvianCodeScheduledTask(id: id, name: "Standup", prompt: "p", workingDirectory: "/Users/me/R&D",
                                                providerID: UUID(), schedule: .weekdays9am)
-        let xml = manager.launchdPlistXML(for: weekdays, executablePath: "/Applications/Nexus Agent.app/Contents/MacOS/NexusAgent")
+        let xml = manager.launchdPlistXML(for: weekdays, executablePath: "/Applications/NexusAgent.app/Contents/MacOS/NexusAgent")
         XCTAssertTrue(xml.hasPrefix("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"), xml)
         XCTAssertTrue(xml.contains("<string>nexus-agent.automation.11111111-2222-3333-4444-555555555555</string>"), xml)
         XCTAssertTrue(xml.contains("<string>--run-automation</string>"), xml)
@@ -242,7 +242,7 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
         let plist = try XCTUnwrap(PropertyListSerialization.propertyList(from: Data(xml.utf8), format: nil)
             as? [String: Any])
         XCTAssertEqual(plist["ProgramArguments"] as? [String],
-                       ["/Applications/Nexus Agent.app/Contents/MacOS/NexusAgent", "--run-automation", id.uuidString])
+                       ["/Applications/NexusAgent.app/Contents/MacOS/NexusAgent", "--run-automation", id.uuidString])
         let entries = try XCTUnwrap(plist["StartCalendarInterval"] as? [[String: Int]])
         XCTAssertEqual(entries.count, 5)
         XCTAssertEqual(Set(entries.compactMap { $0["Weekday"] }), [1, 2, 3, 4, 5])
@@ -265,17 +265,17 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     // MARK: - Orchestration runs and the control protocol
 
     /// write → (review, docs): review and docs both wait on write.
-    private func diamond() -> [NexusAgentWorkerTask] {
-        let write = NexusAgentWorkerTask(title: "Write", promptSpec: "implement", role: .writerWorktree)
-        let review = NexusAgentWorkerTask(title: "Review", promptSpec: "review", role: .reviewerReadOnly,
+    private func diamond() -> [VitruvianCodeWorkerTask] {
+        let write = VitruvianCodeWorkerTask(title: "Write", promptSpec: "implement", role: .writerWorktree)
+        let review = VitruvianCodeWorkerTask(title: "Review", promptSpec: "review", role: .reviewerReadOnly,
                                           dependsOnTaskIDs: [write.id])
-        let docs = NexusAgentWorkerTask(title: "Docs", promptSpec: "document", role: .writerWorktree,
+        let docs = VitruvianCodeWorkerTask(title: "Docs", promptSpec: "document", role: .writerWorktree,
                                         dependsOnTaskIDs: [write.id])
         return [write, review, docs]
     }
 
     func testReadyTasksAreThoseWhoseDependenciesCompleted() {
-        var run = NexusAgentOrchestrationRun(name: "Diamond", tasks: diamond())
+        var run = VitruvianCodeOrchestrationRun(name: "Diamond", tasks: diamond())
         XCTAssertEqual(run.readyTasks.map(\.title), ["Write"])
         XCTAssertFalse(run.isComplete)
         run.tasks[0].status = .completed
@@ -288,19 +288,19 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     }
 
     func testInvalidGraphsAreRefused() {
-        var a = NexusAgentWorkerTask(title: "A", promptSpec: "a")
-        var b = NexusAgentWorkerTask(title: "B", promptSpec: "b", dependsOnTaskIDs: [a.id])
+        var a = VitruvianCodeWorkerTask(title: "A", promptSpec: "a")
+        var b = VitruvianCodeWorkerTask(title: "B", promptSpec: "b", dependsOnTaskIDs: [a.id])
         a.dependsOnTaskIDs = [b.id]
-        XCTAssertEqual(NexusAgentOrchestrationRun(name: "loop", tasks: [a, b]).validationError,
+        XCTAssertEqual(VitruvianCodeOrchestrationRun(name: "loop", tasks: [a, b]).validationError,
                        "the task dependencies form a cycle")
         b.dependsOnTaskIDs = [UUID()]
         a.dependsOnTaskIDs = []
-        XCTAssertNotNil(NexusAgentOrchestrationRun(name: "dangling", tasks: [a, b]).validationError)
+        XCTAssertNotNil(VitruvianCodeOrchestrationRun(name: "dangling", tasks: [a, b]).validationError)
     }
 
     @MainActor
     func testTheDAGMovesFromPendingThroughReadyDispatchedAndCompleted() throws {
-        let coordinator = NexusAgentOrchestrationCoordinator(worktreeRoot: "/tmp/wt/")
+        let coordinator = VitruvianCodeOrchestrationCoordinator(worktreeRoot: "/tmp/wt/")
         let tasks = diamond()
         let run = try coordinator.startRun(name: "Feature X", tasks: tasks).get()
         XCTAssertEqual(run.tasks.map(\.status), [.ready, .pending, .pending])
@@ -331,7 +331,7 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
 
     @MainActor
     func testRepeatedFailureBreaksTheCircuitDownstream() throws {
-        let coordinator = NexusAgentOrchestrationCoordinator(worktreeRoot: "/wt", maxFailures: 2)
+        let coordinator = VitruvianCodeOrchestrationCoordinator(worktreeRoot: "/wt", maxFailures: 2)
         let tasks = diamond()
         let run = try coordinator.startRun(name: "Flaky", tasks: tasks).get()
         coordinator.dispatchReady(runID: run.id)
@@ -346,7 +346,7 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
 
     @MainActor
     func testJSONControlCommands() throws {
-        let coordinator = NexusAgentOrchestrationCoordinator(worktreeRoot: "/wt")
+        let coordinator = VitruvianCodeOrchestrationCoordinator(worktreeRoot: "/wt")
         coordinator.hibernatedSessionIDs = { ["asleep-1"] }
 
         // A CLI caller sends a bare task list: only title and promptSpec.
@@ -375,16 +375,16 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
         XCTAssertEqual(status.result?.runs?.map(\.id), [runID])
         XCTAssertEqual(status.result?.hibernatedSessionIDs, ["asleep-1"])
 
-        let inbox = coordinator.handle(NexusAgentControlCommand(id: "4", method: .inboxList))
+        let inbox = coordinator.handle(VitruvianCodeControlCommand(id: "4", method: .inboxList))
         XCTAssertEqual(inbox.result?.inbox?.map(\.summary), ["wrote it"])
 
-        let worktree = coordinator.handle(NexusAgentControlCommand(
+        let worktree = coordinator.handle(VitruvianCodeControlCommand(
             method: .worktreeCreate, params: .init(branch: "feat/thing")))
         XCTAssertEqual(worktree.result?.worktreePath, "/wt/feat-thing")
         XCTAssertEqual(worktree.result?.gitArguments, ["worktree", "add", "-b", "feat/thing", "/wt/feat-thing"])
 
         // Mistakes come back as failures, never as a thrown error.
-        let missing = coordinator.handle(NexusAgentControlCommand(method: .orchestrationWorkerDone))
+        let missing = coordinator.handle(VitruvianCodeControlCommand(method: .orchestrationWorkerDone))
         XCTAssertFalse(missing.ok)
         let garbage = try decode(coordinator.handle(json: Data("not json".utf8)))
         XCTAssertFalse(garbage.ok)
@@ -394,85 +394,85 @@ final class OrcaOrchestrationAndAutomationTests: XCTestCase {
     }
 
     func testControlMethodsUseTheirWireNames() throws {
-        XCTAssertEqual(NexusAgentControlCommand.Method.allCases.map(\.rawValue),
+        XCTAssertEqual(VitruvianCodeControlCommand.Method.allCases.map(\.rawValue),
                        ["status", "worktree.create", "orchestration.dispatch", "orchestration.worker_done", "inbox.list"])
-        let command = NexusAgentControlCommand(id: "9", method: .orchestrationWorkerDone,
+        let command = VitruvianCodeControlCommand(id: "9", method: .orchestrationWorkerDone,
                                                params: .init(runID: UUID(), taskID: UUID(), succeeded: true))
         let data = try JSONEncoder().encode(command)
         XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("\"orchestration.worker_done\""))
-        XCTAssertEqual(try JSONDecoder().decode(NexusAgentControlCommand.self, from: data), command)
+        XCTAssertEqual(try JSONDecoder().decode(VitruvianCodeControlCommand.self, from: data), command)
     }
 
-    private func decode(_ data: Data) throws -> NexusAgentControlResponse {
+    private func decode(_ data: Data) throws -> VitruvianCodeControlResponse {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(NexusAgentControlResponse.self, from: data)
+        return try decoder.decode(VitruvianCodeControlResponse.self, from: data)
     }
 
     // MARK: - SSH remote worktrees and the mobile companion
 
     func testSSHArgumentsRunInTheRemoteWorkspaceWithAPortForward() {
-        let host = NexusAgentRemoteHost(label: "Build box", sshHost: "build.lan", sshUser: "james",
+        let host = VitruvianCodeRemoteHost(label: "Build box", sshHost: "build.lan", sshUser: "james",
                                         remoteWorkspacePath: "/home/james/it's here",
                                         portForwardLocalPort: 3000, portForwardRemotePort: 5173)
-        XCTAssertEqual(NexusAgentRemoteAndMobileBridge.sshArguments(for: host, remoteCommand: "claude -p hi"),
+        XCTAssertEqual(VitruvianCodeRemoteAndMobileBridge.sshArguments(for: host, remoteCommand: "claude -p hi"),
                        ["-o", "BatchMode=yes", "-o", "ServerAliveInterval=30",
                         "-L", "3000:localhost:5173",
                         "james@build.lan",
                         "cd '/home/james/it'\\''s here' && claude -p hi"])
-        XCTAssertEqual(NexusAgentRemoteAndMobileBridge.sshArguments(for: host, remoteCommand: " "),
+        XCTAssertEqual(VitruvianCodeRemoteAndMobileBridge.sshArguments(for: host, remoteCommand: " "),
                        ["-o", "BatchMode=yes", "-o", "ServerAliveInterval=30",
                         "-L", "3000:localhost:5173", "-N", "james@build.lan"],
                        "no command only holds the forward open")
     }
 
     func testSSHArgumentsWithoutAPortForwardOrUser() {
-        let host = NexusAgentRemoteHost(label: "box", sshHost: "box", portForwardLocalPort: 3000)
-        XCTAssertEqual(NexusAgentRemoteAndMobileBridge.sshArguments(for: host, remoteCommand: "ls"),
+        let host = VitruvianCodeRemoteHost(label: "box", sshHost: "box", portForwardLocalPort: 3000)
+        XCTAssertEqual(VitruvianCodeRemoteAndMobileBridge.sshArguments(for: host, remoteCommand: "ls"),
                        ["-o", "BatchMode=yes", "-o", "ServerAliveInterval=30", "box", "ls"])
         var badPort = host
         badPort.portForwardRemotePort = 70000
-        XCTAssertEqual(NexusAgentRemoteAndMobileBridge.portForwardArguments(for: badPort), [])
+        XCTAssertEqual(VitruvianCodeRemoteAndMobileBridge.portForwardArguments(for: badPort), [])
     }
 
     func testMobileSnapshotsRoundTrip() throws {
         let snapshots = [
-            NexusAgentMobileSessionSnapshot(sessionID: "a", title: "Fix the build", providerName: "Claude",
+            VitruvianCodeMobileSessionSnapshot(sessionID: "a", title: "Fix the build", providerName: "Claude",
                                             status: "waiting", workingDirectory: "/repo", worktreeBranch: "fix/build",
                                             pendingApprovalSummary: "Run bazel test?",
                                             updatedAt: Date(timeIntervalSince1970: 1_800_000_000)),
-            NexusAgentMobileSessionSnapshot(sessionID: "b", title: "Docs", providerName: "OpenCode",
+            VitruvianCodeMobileSessionSnapshot(sessionID: "b", title: "Docs", providerName: "OpenCode",
                                             status: "idle", workingDirectory: "/docs",
                                             updatedAt: Date(timeIntervalSince1970: 1_800_000_060)),
         ]
-        let data = try NexusAgentRemoteAndMobileBridge.exportSnapshots(snapshots)
+        let data = try VitruvianCodeRemoteAndMobileBridge.exportSnapshots(snapshots)
         let text = String(decoding: data, as: UTF8.self)
         XCTAssertTrue(text.contains("\"updatedAt\":\"2027-01-15T08:00:00Z\""), "dates go out as ISO 8601: \(text)")
         XCTAssertTrue(text.contains("\"pendingApprovalSummary\":\"Run bazel test?\""), text)
-        XCTAssertEqual(try NexusAgentRemoteAndMobileBridge.importSnapshots(data), snapshots)
+        XCTAssertEqual(try VitruvianCodeRemoteAndMobileBridge.importSnapshots(data), snapshots)
     }
 
     func testMobileQuickActions() throws {
-        XCTAssertEqual(NexusAgentMobileQuickAction.allCases.map(\.rawValue),
+        XCTAssertEqual(VitruvianCodeMobileQuickAction.allCases.map(\.rawValue),
                        ["approve", "deny", "stop", "send_prompt", "switch_account"])
-        let prompt = try NexusAgentRemoteAndMobileBridge.decodeCommand(
+        let prompt = try VitruvianCodeRemoteAndMobileBridge.decodeCommand(
             Data(#"{"action":"send_prompt","sessionID":"a","text":"keep going"}"#.utf8))
-        XCTAssertEqual(prompt, NexusAgentMobileCommand(action: .sendPrompt, sessionID: "a", text: "keep going"))
-        let approve = NexusAgentMobileCommand(action: .approve, sessionID: "a")
-        XCTAssertEqual(try NexusAgentRemoteAndMobileBridge.decodeCommand(
-            NexusAgentRemoteAndMobileBridge.encodeCommand(approve)), approve)
+        XCTAssertEqual(prompt, VitruvianCodeMobileCommand(action: .sendPrompt, sessionID: "a", text: "keep going"))
+        let approve = VitruvianCodeMobileCommand(action: .approve, sessionID: "a")
+        XCTAssertEqual(try VitruvianCodeRemoteAndMobileBridge.decodeCommand(
+            VitruvianCodeRemoteAndMobileBridge.encodeCommand(approve)), approve)
 
-        XCTAssertThrowsError(try NexusAgentRemoteAndMobileBridge.decodeCommand(
+        XCTAssertThrowsError(try VitruvianCodeRemoteAndMobileBridge.decodeCommand(
             Data(#"{"action":"send_prompt","sessionID":"a"}"#.utf8))) { error in
-            XCTAssertEqual(error as? NexusAgentRemoteAndMobileBridge.BridgeError, .missingText)
+            XCTAssertEqual(error as? VitruvianCodeRemoteAndMobileBridge.BridgeError, .missingText)
         }
-        XCTAssertThrowsError(try NexusAgentRemoteAndMobileBridge.decodeCommand(
+        XCTAssertThrowsError(try VitruvianCodeRemoteAndMobileBridge.decodeCommand(
             Data(#"{"action":"switch_account","sessionID":"a"}"#.utf8))) { error in
-            XCTAssertEqual(error as? NexusAgentRemoteAndMobileBridge.BridgeError, .missingAccount)
+            XCTAssertEqual(error as? VitruvianCodeRemoteAndMobileBridge.BridgeError, .missingAccount)
         }
-        XCTAssertThrowsError(try NexusAgentRemoteAndMobileBridge.decodeCommand(
+        XCTAssertThrowsError(try VitruvianCodeRemoteAndMobileBridge.decodeCommand(
             Data(#"{"action":"stop","sessionID":" "}"#.utf8)))
-        XCTAssertThrowsError(try NexusAgentRemoteAndMobileBridge.decodeCommand(
+        XCTAssertThrowsError(try VitruvianCodeRemoteAndMobileBridge.decodeCommand(
             Data(#"{"action":"reboot","sessionID":"a"}"#.utf8)))
     }
 }

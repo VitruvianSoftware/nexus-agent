@@ -20,12 +20,13 @@
 
 #[test]
 fn test_app_holds_mermaid() {
+    // TODO(brand step 2): .app bundle name stays NexusAgent until migration.
     let app_name = std::env::var("APP_NAME").unwrap_or_else(|_| "NexusAgent".to_string());
     let archive_paths = std::env::var("ARCHIVE_PATHS").expect("ARCHIVE_PATHS not set");
     let resource_paths = std::env::var("RESOURCE_PATHS").expect("RESOURCE_PATHS not set");
     let mut args = vec!["bazel-app-holds-mermaid".to_string(), app_name];
     args.extend(archive_paths.split_whitespace().map(|s| s.to_string()));
     args.extend(resource_paths.split_whitespace().map(|s| s.to_string()));
-    let code = nexus_agent_scripts_lib::bazel_app_holds_mermaid::run(&args);
+    let code = vitruvian_code_scripts_lib::bazel_app_holds_mermaid::run(&args);
     assert_eq!(code, 0);
 }

@@ -30,7 +30,7 @@ fn test_mirror_build() {
 
     let app = PathBuf::from(&test_srcdir)
         .join(&test_workspace)
-        .join("apps/desktop/nexus-agent");
+        .join("apps/desktop/vitruvian-code");
     let mirror = test_tmpdir.join("mirror");
     let work = mirror.join("macos");
     fs::create_dir_all(&work).expect("create work dir");
@@ -137,7 +137,7 @@ fn test_mirror_build() {
         .env_remove("TEST_WORKSPACE")
         .env("HOME", &home)
         .env("CFFIXED_USER_HOME", &home)
-        .env("NEXUS_AGENT_PACKAGED_APP", &packaged)
+        .env("VITRUVIAN_CODE_PACKAGED_APP", &packaged)
         .output()
         .expect("xcrun swift test");
 

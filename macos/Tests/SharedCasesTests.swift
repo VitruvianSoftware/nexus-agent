@@ -20,9 +20,9 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
-/// The examples in `apps/desktop/nexus-agent/testdata` are shared with the
+/// The examples in `apps/desktop/vitruvian-code/testdata` are shared with the
 /// bot's tests (`src/shared-cases.test.js`). This file runs them through the
 /// shared library, so a rule changed on one side without the other following
 /// fails here. Expected values live only in the JSON.
@@ -30,7 +30,7 @@ final class SharedCasesTests: XCTestCase {
     /// The cases of one shared file. A missing, unreadable or empty file fails
     /// the test: a loop over no cases would pass without checking anything.
     private func loadCases(_ file: String, line: UInt = #line) -> [[String: Any]] {
-        let relative = "apps/desktop/nexus-agent/testdata/\(file)"
+        let relative = "apps/desktop/vitruvian-code/testdata/\(file)"
         var candidates: [String] = []
         let environment = ProcessInfo.processInfo.environment
         if let runfiles = environment["TEST_SRCDIR"] {
@@ -68,7 +68,7 @@ final class SharedCasesTests: XCTestCase {
                 XCTFail("\(name): needs a text and an archived true/false")
                 continue
             }
-            XCTAssertEqual(NexusAgentSessionSummary.antigravityAnnotationIsArchived(text), archived, name)
+            XCTAssertEqual(VitruvianCodeSessionSummary.antigravityAnnotationIsArchived(text), archived, name)
             checked += 1
         }
         XCTAssertEqual(checked, cases.count, "every case in the file was checked")
@@ -104,7 +104,7 @@ final class SharedCasesTests: XCTestCase {
         let cases = approvalCases()
         var checked = 0
         for item in cases {
-            XCTAssertEqual(NexusAgentApprovalMode.parse(item.value).agyArguments, item.args, item.name)
+            XCTAssertEqual(VitruvianCodeApprovalMode.parse(item.value).agyArguments, item.args, item.name)
             checked += 1
         }
         XCTAssertEqual(checked, cases.count, "every case in the file was checked")
@@ -123,13 +123,13 @@ final class SharedCasesTests: XCTestCase {
         var checked = 0
         for item in cases {
             guard let typed = item.value else { continue }
-            let key = NexusAgentEnvFile.approvalModeKey
-            let before = "\(key)=\(NexusAgentEnvFile.encoded(typed))\n"
-            XCTAssertEqual(NexusAgentEnvFile.values(in: before)[key], typed,
+            let key = VitruvianCodeEnvFile.approvalModeKey
+            let before = "\(key)=\(VitruvianCodeEnvFile.encoded(typed))\n"
+            XCTAssertEqual(VitruvianCodeEnvFile.values(in: before)[key], typed,
                            "\(item.name): the line under test carries the value as typed")
 
-            let saved = NexusAgentEnvFile.render(NexusAgentEnvFile.parse(before), over: before)
-            guard let written = NexusAgentEnvFile.values(in: saved)[key] else {
+            let saved = VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse(before), over: before)
+            guard let written = VitruvianCodeEnvFile.values(in: saved)[key] else {
                 XCTFail("\(item.name): the saved file has no \(key)")
                 continue
             }
@@ -158,12 +158,12 @@ final class SharedCasesTests: XCTestCase {
         XCTAssertEqual(absent.count, 1, "the shared examples have one case for the absent key")
         guard let whenAbsent = absent.first else { return }
 
-        let key = NexusAgentEnvFile.approvalModeKey
+        let key = VitruvianCodeEnvFile.approvalModeKey
         let before = "# nothing about approval here\nOTHER=1\n"
-        XCTAssertNil(NexusAgentEnvFile.values(in: before)[key], "the file under test has no \(key) line")
+        XCTAssertNil(VitruvianCodeEnvFile.values(in: before)[key], "the file under test has no \(key) line")
 
-        let saved = NexusAgentEnvFile.render(NexusAgentEnvFile.parse(before), over: before)
-        guard let written = NexusAgentEnvFile.values(in: saved)[key] else {
+        let saved = VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse(before), over: before)
+        guard let written = VitruvianCodeEnvFile.values(in: saved)[key] else {
             XCTFail("the saved file has no \(key)")
             return
         }
@@ -185,7 +185,7 @@ final class SharedCasesTests: XCTestCase {
                 XCTFail("\(name): needs a line, a key and a value")
                 continue
             }
-            let read = NexusAgentEnvFile.assignment(in: line)
+            let read = VitruvianCodeEnvFile.assignment(in: line)
             if rawKey is NSNull, rawValue is NSNull {
                 XCTAssertNil(read.map { "\($0.key)=\($0.value)" }, "\(name): the line assigns nothing")
             } else if let key = rawKey as? String, let value = rawValue as? String {
@@ -215,7 +215,7 @@ final class SharedCasesTests: XCTestCase {
                 XCTFail("\(name): needs a content and values, an object of strings")
                 continue
             }
-            XCTAssertEqual(NexusAgentEnvFile.values(in: content), values, name)
+            XCTAssertEqual(VitruvianCodeEnvFile.values(in: content), values, name)
             checked += 1
         }
         XCTAssertEqual(checked, cases.count, "every case in the file was checked")
@@ -234,9 +234,9 @@ final class SharedCasesTests: XCTestCase {
                 XCTFail("\(name): needs a content and values, an object of strings")
                 continue
             }
-            let saved = NexusAgentEnvFile.render(NexusAgentEnvFile.parse(content), over: content)
-            let after = NexusAgentEnvFile.values(in: saved)
-            for (key, value) in values where !NexusAgentEnvFile.managedKeys.contains(key) {
+            let saved = VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse(content), over: content)
+            let after = VitruvianCodeEnvFile.values(in: saved)
+            for (key, value) in values where !VitruvianCodeEnvFile.managedKeys.contains(key) {
                 XCTAssertEqual(after[key], value, "\(name): \(key) after a save")
             }
             checked += 1
@@ -257,8 +257,8 @@ final class SharedCasesTests: XCTestCase {
                 XCTFail("\(name): needs a value and a line")
                 continue
             }
-            XCTAssertEqual(NexusAgentEnvFile.encoded(value), line, "\(name): what is written")
-            let read = NexusAgentEnvFile.assignment(in: "K=\(line)")?.value
+            XCTAssertEqual(VitruvianCodeEnvFile.encoded(value), line, "\(name): what is written")
+            let read = VitruvianCodeEnvFile.assignment(in: "K=\(line)")?.value
             if let lossy = item["lossy"] {
                 // No spelling carries this value. The day one does, this
                 // fails, and the case loses its `lossy` mark.
@@ -322,7 +322,7 @@ final class SharedCasesTests: XCTestCase {
     /// The flags a turn passes agy after the prompt and the format, for the
     /// settings a `.env` gives.
     private func agyFlags(for env: String, file: StaticString = #filePath, line: UInt = #line) -> [String] {
-        let arguments = NexusAgentSupport.agentArguments(prompt: "hi", configuration: NexusAgentEnvFile.parse(env),
+        let arguments = VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: VitruvianCodeEnvFile.parse(env),
                                                          conversationID: nil)
         XCTAssertEqual(Array(arguments.prefix(4)), ["-p", "hi", "--output-format", "stream-json"],
                        "the flags follow the prompt and the format", file: file, line: line)
@@ -338,7 +338,7 @@ final class SharedCasesTests: XCTestCase {
             if item.isOwnCommand {
                 // A command of the user's own is run from its template, and
                 // nothing of the effort or the thinking line is added to it.
-                let command = NexusAgentSupport.providerCommand(template: "print-arguments {prompt}",
+                let command = VitruvianCodeSupport.providerCommand(template: "print-arguments {prompt}",
                                                                 prompt: "hi", model: "")
                 XCTAssertEqual(command?.arguments, ["hi"] + item.flags, item.name)
                 ownCommands += 1
@@ -362,10 +362,10 @@ final class SharedCasesTests: XCTestCase {
         let cases = flagsCases().filter { !$0.isOwnCommand }
         var checked = 0
         for item in cases {
-            let saved = NexusAgentEnvFile.render(NexusAgentEnvFile.parse(item.env), over: item.env)
+            let saved = VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse(item.env), over: item.env)
             XCTAssertEqual(agyFlags(for: saved), item.flags, "\(item.name): after a save, which wrote\n\(saved)")
             // A second save changes nothing more.
-            XCTAssertEqual(NexusAgentEnvFile.render(NexusAgentEnvFile.parse(saved), over: saved), saved,
+            XCTAssertEqual(VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse(saved), over: saved), saved,
                            "\(item.name): saved twice")
             checked += 1
         }
@@ -378,13 +378,13 @@ final class SharedCasesTests: XCTestCase {
     func testChoosingAnEffortReplacesWhateverTheLineSaid() {
         for written in ["HIGH", "max", "' high '", "low", ""] {
             let before = "AGY_APPROVAL_MODE=default\nAGY_EFFORT=\(written)\n"
-            for chosen in NexusAgentEffort.allCases where chosen != NexusAgentEnvFile.parse(before).effort {
-                var edited = NexusAgentEnvFile.parse(before)
+            for chosen in VitruvianCodeEffort.allCases where chosen != VitruvianCodeEnvFile.parse(before).effort {
+                var edited = VitruvianCodeEnvFile.parse(before)
                 edited.effort = chosen
                 let expected = chosen == .automatic ? [] : ["--effort", chosen.rawValue]
-                let turn = NexusAgentSupport.agentArguments(prompt: "hi", configuration: edited, conversationID: nil)
+                let turn = VitruvianCodeSupport.agentArguments(prompt: "hi", configuration: edited, conversationID: nil)
                 XCTAssertEqual(Array(turn.dropFirst(4)), expected, "written \(written), chosen \(chosen): the turn")
-                let saved = NexusAgentEnvFile.render(edited, over: before)
+                let saved = VitruvianCodeEnvFile.render(edited, over: before)
                 XCTAssertEqual(agyFlags(for: saved), expected, "written \(written), chosen \(chosen): the save")
             }
         }
@@ -395,13 +395,13 @@ final class SharedCasesTests: XCTestCase {
     func testSavingKeepsTheThinkingLine() {
         for value in ["true", "false", "TRUE", ""] {
             let before = "# mine\nAGY_EFFORT=low\nAGY_THINKING=\(value)\nSOMETHING_ELSE=kept\n"
-            var edited = NexusAgentEnvFile.parse(before)
+            var edited = VitruvianCodeEnvFile.parse(before)
             edited.model = "m2"
             edited.effort = .medium
-            let after = NexusAgentEnvFile.values(in: NexusAgentEnvFile.render(edited, over: before))
+            let after = VitruvianCodeEnvFile.values(in: VitruvianCodeEnvFile.render(edited, over: before))
             XCTAssertEqual(after["AGY_THINKING"], value, "AGY_THINKING=\(value) after a save")
             XCTAssertEqual(after["SOMETHING_ELSE"], "kept")
-            XCTAssertEqual(after[NexusAgentEnvFile.modelKey], "m2")
+            XCTAssertEqual(after[VitruvianCodeEnvFile.modelKey], "m2")
         }
     }
 
@@ -411,8 +411,8 @@ final class SharedCasesTests: XCTestCase {
     /// by them: a missing effort line counts as an empty one, which is how
     /// a save writes it.
     private func effortLines(_ env: String) -> [String?] {
-        let values = NexusAgentEnvFile.values(in: env)
-        return [values[NexusAgentEnvFile.effortKey] ?? "", values[NexusAgentEnvFile.thinkingKey]]
+        let values = VitruvianCodeEnvFile.values(in: env)
+        return [values[VitruvianCodeEnvFile.effortKey] ?? "", values[VitruvianCodeEnvFile.thinkingKey]]
     }
 
     private let effortsWritten: [String?] = [nil, "", "low", "medium", "high", "HIGH", "max"]
@@ -429,7 +429,7 @@ final class SharedCasesTests: XCTestCase {
     func testTheEffortShownIsTheEffortLineThenTheThinkingLine() {
         for effort in effortsWritten {
             for thinking in thinkingWritten {
-                let read = NexusAgentEnvFile.parse(env(effort: effort, thinking: thinking))
+                let read = VitruvianCodeEnvFile.parse(env(effort: effort, thinking: thinking))
                 let name = "effort \(effort ?? "absent"), thinking \(thinking ?? "absent")"
                 switch effort {
                 case "max":
@@ -458,9 +458,9 @@ final class SharedCasesTests: XCTestCase {
         for effort in effortsWritten {
             for thinking in thinkingWritten {
                 let before = env(effort: effort, thinking: thinking)
-                var untouched = NexusAgentEnvFile.parse(before)
+                var untouched = VitruvianCodeEnvFile.parse(before)
                 untouched.model = "m2"
-                let saved = NexusAgentEnvFile.render(untouched, over: before)
+                let saved = VitruvianCodeEnvFile.render(untouched, over: before)
                 XCTAssertEqual(effortLines(saved), effortLines(before),
                                "effort \(effort ?? "absent"), thinking \(thinking ?? "absent"): wrote\n\(saved)")
                 XCTAssertEqual(agyFlags(for: saved), ["--model", "m2"] + agyFlags(for: before),
@@ -478,22 +478,22 @@ final class SharedCasesTests: XCTestCase {
         for effort in effortsWritten {
             for thinking in thinkingWritten {
                 let before = env(effort: effort, thinking: thinking)
-                for chosen in NexusAgentEffort.allCases {
-                    var edited = NexusAgentEnvFile.parse(before)
+                for chosen in VitruvianCodeEffort.allCases {
+                    var edited = VitruvianCodeEnvFile.parse(before)
                     // Choosing what is already shown is not a choice: no
                     // page can make it, and the lines stay as they are.
                     guard chosen != edited.effort || edited.unnamedEffort != nil else { continue }
                     edited.effort = chosen
                     let name = "effort \(effort ?? "absent"), thinking \(thinking ?? "absent"), chosen \(chosen)"
-                    let saved = NexusAgentEnvFile.render(edited, over: before)
+                    let saved = VitruvianCodeEnvFile.render(edited, over: before)
                     let thinkingAfter = chosen == .automatic && thinking == "true" ? "false" : thinking
                     XCTAssertEqual(effortLines(saved), [chosen.rawValue, thinkingAfter], "\(name): wrote\n\(saved)")
                     XCTAssertEqual(agyFlags(for: saved), chosen == .automatic ? [] : ["--effort", chosen.rawValue], name)
-                    let reread = NexusAgentEnvFile.parse(saved)
+                    let reread = VitruvianCodeEnvFile.parse(saved)
                     XCTAssertEqual(reread.effort, chosen, "\(name): read back")
                     XCTAssertNil(reread.unnamedEffort, name)
                     // And a save after that, with nothing changed, changes nothing.
-                    XCTAssertEqual(NexusAgentEnvFile.render(reread, over: saved), saved, "\(name): saved twice")
+                    XCTAssertEqual(VitruvianCodeEnvFile.render(reread, over: saved), saved, "\(name): saved twice")
                     checked += 1
                 }
             }
@@ -506,25 +506,25 @@ final class SharedCasesTests: XCTestCase {
     func testTheEffortChoiceIsTheRowAPageSelects() {
         for (written, row) in [("max", "max"), ("HIGH", "high"), ("low", "low"), ("", "")] {
             let before = "AGY_APPROVAL_MODE=default\nAGY_EFFORT=\(written)\nAGY_THINKING=true\n"
-            var read = NexusAgentEnvFile.parse(before)
+            var read = VitruvianCodeEnvFile.parse(before)
             let shown = written.isEmpty ? "high" : row
             XCTAssertEqual(read.effortChoice, shown, "written \(written)")
             read.effortChoice = shown
-            XCTAssertEqual(read, NexusAgentEnvFile.parse(before), "written \(written): the same row is not a choice")
-            XCTAssertEqual(NexusAgentEnvFile.render(read, over: before), NexusAgentEnvFile.render(NexusAgentEnvFile.parse(before), over: before))
+            XCTAssertEqual(read, VitruvianCodeEnvFile.parse(before), "written \(written): the same row is not a choice")
+            XCTAssertEqual(VitruvianCodeEnvFile.render(read, over: before), VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse(before), over: before))
             read.effortChoice = "medium"
             XCTAssertEqual(read.effort, .medium, "written \(written)")
             XCTAssertNil(read.unnamedEffort, "written \(written): the word's row goes with the choice")
             XCTAssertEqual(read.effortChoice, "medium")
-            XCTAssertEqual(NexusAgentEnvFile.values(in: NexusAgentEnvFile.render(read, over: before))["AGY_EFFORT"], "medium")
+            XCTAssertEqual(VitruvianCodeEnvFile.values(in: VitruvianCodeEnvFile.render(read, over: before))["AGY_EFFORT"], "medium")
         }
     }
 
     /// A failure's words on one line: the lines that are not blank, each
     /// without the space around it, joined by single spaces.
     func testAFailuresWordsOnOneLine() {
-        func notice(_ detail: String?) -> NexusAgentTurnNotice {
-            NexusAgentTurnNotice(providerName: "P", text: "a reply", failed: true, endedCleanly: false, failureDetail: detail)
+        func notice(_ detail: String?) -> VitruvianCodeTurnNotice {
+            VitruvianCodeTurnNotice(providerName: "P", text: "a reply", failed: true, endedCleanly: false, failureDetail: detail)
         }
         XCTAssertEqual(notice("The agent stopped with an error.\nagy: quota exceeded").failureSummary,
                        "The agent stopped with an error. agy: quota exceeded")
@@ -541,12 +541,12 @@ final class SharedCasesTests: XCTestCase {
     /// since the new file has no thinking line.
     func testTheEffortReadSurvivesTheFileGoing() {
         for gone in [nil, "", "  \n"] as [String?] {
-            let word = NexusAgentEnvFile.render(NexusAgentEnvFile.parse("AGY_EFFORT=max\nAGY_THINKING=true\n"), over: gone)
-            XCTAssertEqual(NexusAgentEnvFile.values(in: word)[NexusAgentEnvFile.effortKey], "max")
+            let word = VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse("AGY_EFFORT=max\nAGY_THINKING=true\n"), over: gone)
+            XCTAssertEqual(VitruvianCodeEnvFile.values(in: word)[VitruvianCodeEnvFile.effortKey], "max")
             XCTAssertEqual(agyFlags(for: word).suffix(2), ["--effort", "max"])
-            let thinking = NexusAgentEnvFile.render(NexusAgentEnvFile.parse("AGY_THINKING=true\n"), over: gone)
-            XCTAssertEqual(NexusAgentEnvFile.values(in: thinking)[NexusAgentEnvFile.effortKey], "high")
-            XCTAssertNil(NexusAgentEnvFile.values(in: thinking)[NexusAgentEnvFile.thinkingKey])
+            let thinking = VitruvianCodeEnvFile.render(VitruvianCodeEnvFile.parse("AGY_THINKING=true\n"), over: gone)
+            XCTAssertEqual(VitruvianCodeEnvFile.values(in: thinking)[VitruvianCodeEnvFile.effortKey], "high")
+            XCTAssertNil(VitruvianCodeEnvFile.values(in: thinking)[VitruvianCodeEnvFile.thinkingKey])
         }
     }
 
@@ -554,11 +554,11 @@ final class SharedCasesTests: XCTestCase {
     /// from it is written as an effort, and the bot goes on passing high.
     func testAHighFromTheOldThinkingNameIsWrittenAsAnEffort() {
         let before = "AGY_APPROVAL_MODE=default\nGEMINI_THINKING=true\n"
-        let read = NexusAgentEnvFile.parse(before)
+        let read = VitruvianCodeEnvFile.parse(before)
         XCTAssertEqual(read.effort, .high)
         XCTAssertFalse(read.effortIsFromThinkingLine)
-        let saved = NexusAgentEnvFile.render(read, over: before)
-        XCTAssertEqual(NexusAgentEnvFile.values(in: saved)[NexusAgentEnvFile.effortKey], "high")
+        let saved = VitruvianCodeEnvFile.render(read, over: before)
+        XCTAssertEqual(VitruvianCodeEnvFile.values(in: saved)[VitruvianCodeEnvFile.effortKey], "high")
         XCTAssertFalse(saved.contains("GEMINI_THINKING"))
         XCTAssertEqual(agyFlags(for: saved), ["--effort", "high"])
     }

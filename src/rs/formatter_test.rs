@@ -19,9 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/src/formatter.test.js`.
+//! Native Rust port of `apps/desktop/vitruvian-code/src/formatter.test.js`.
 
-use nexus_agent_src_lib::formatter::{
+use vitruvian_code_src_lib::formatter::{
     format_response, markdown_to_telegram_html, split_message, split_message_default,
 };
 

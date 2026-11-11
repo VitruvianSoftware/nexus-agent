@@ -1,7 +1,7 @@
 # Shared examples
 
 Some rules exist twice: once in the bot (JavaScript, `../src`) and once in the
-library the Mac apps share (Swift, `../macos/Sources/NexusAgentCore`). The files
+library the Mac apps share (Swift, `../macos/Sources/VitruvianCodeCore`). The files
 here are one set of examples for those rules. Both sides' tests read them, so
 changing a rule on one side fails the other side's tests.
 
@@ -74,8 +74,8 @@ Add it here, not in one language's test. Run the bot's code on the input to
 get the expected value, then run both tests:
 
 ```
-bazel test //apps/desktop/nexus-agent/src:shared_cases_test
-bazel test --config=macos-app //apps/desktop/nexus-agent/macos:NexusAgentTests
+bazel test //apps/desktop/vitruvian-code/src:shared_cases_test
+bazel test --config=macos-app //apps/desktop/vitruvian-code/macos:VitruvianCodeTests
 ```
 
 Every file has the same shape: `{ "rule": "<one sentence>", "cases": [ { "name": "<plain words>", ... } ] }`.

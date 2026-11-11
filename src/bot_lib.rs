@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! Native Rust port of `apps/desktop/nexus-agent/bot.sh`.
+//! Native Rust port of `apps/desktop/vitruvian-code/bot.sh`.
 //! Process manager for the Antigravity (agy) Telegram Bot (`start|stop|restart|status|logs`).
 
 use std::env;
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_status_stop_start_and_logs_lifecycle() {
-        let tmp = make_temp_dir("nexus-bot-test");
+        let tmp = make_temp_dir("vitruvian-code-bot-test");
 
         // 1. Status when not running
         let status_out = run_bot(&BotOptions {

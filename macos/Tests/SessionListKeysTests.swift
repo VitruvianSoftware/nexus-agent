@@ -20,15 +20,14 @@
 
 import XCTest
 
-import NexusAgentCore
+import VitruvianCodeCore
 
 /// The arrow keys and Return in the sessions drawer, as the standalone app's
 /// own chat handled them (`moveSelection` and the prompt's `onSubmit` in its
-/// `QuickPromptView`, removed in step 3c; last shipped in nexus-agent
-/// 1.19.0). The view only calls these rules, so they are tested here
+/// `QuickPromptView`, removed in step 3c; last shipped in nexus-agent-v1.19.0). The view only calls these rules, so they are tested here
 /// without one.
 final class SessionListKeysTests: XCTestCase {
-    private typealias Keys = NexusAgentSessionListKeys
+    private typealias Keys = VitruvianCodeSessionListKeys
 
     func testDownStartsAtTheTopAndStopsAtTheBottom() {
         XCTAssertEqual(Keys.selection(after: .down, from: nil, count: 3), 0, "with nothing selected, down takes the first row")
@@ -131,7 +130,7 @@ final class SessionListKeysTests: XCTestCase {
 /// that was not followed up stops counting after two seconds whether or not
 /// anything ran in between to say so.
 final class ClearAllGuardTests: XCTestCase {
-    private typealias Guard = NexusAgentClearAllGuard
+    private typealias Guard = VitruvianCodeClearAllGuard
     private let first = Date(timeIntervalSinceReferenceDate: 1_000)
 
     func testOneClickNeverDeletes() {
