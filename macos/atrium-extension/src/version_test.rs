@@ -86,7 +86,7 @@ fn extract_kit_version(package_swift: &str) -> Option<String> {
 fn tool_version_matches_app() {
     let mut problems = Vec::new();
 
-    let manifest_path = rlocation(&format!("{}/tool/vitruvian-tool.json", PKG));
+    let manifest_path = rlocation(&format!("{}/atrium-extension/vitruvian-tool.json", PKG));
     let manifest_text = fs::read_to_string(&manifest_path)
         .unwrap_or_else(|e| panic!("cannot read {}: {}", manifest_path.display(), e));
     let manifest: serde_json::Value = serde_json::from_str(&manifest_text)
@@ -152,7 +152,7 @@ fn tool_version_matches_app() {
         .unwrap_or_default();
 
     for needed in &[
-        "macos/tool/vitruvian-tool.json",
+        "macos/atrium-extension/vitruvian-tool.json",
         "macos/Sources/VitruvianCodeToolCore/Version.swift",
     ] {
         if !extra_files.iter().any(|f| f == needed) {
